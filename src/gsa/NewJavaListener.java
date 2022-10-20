@@ -22,7 +22,8 @@ public class NewJavaListener extends JavaBaseListener {
 
 	public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
 	public Map<String, String> varTypes;	// keeps track of the type of each variable
-	public HashMap<String, Integer> tempIfMap;
+	public Map<String, Boolean> defined;
+	public Stack<HashMap<String, Integer>> tempIfMaps;
     public TokenStreamRewriter rewriter;
     public int tabAmount;
     public int indexIncrease; 	// keeps track of how much the index has been increased in the rewriter
@@ -42,7 +43,8 @@ public class NewJavaListener extends JavaBaseListener {
         rewriter = new TokenStreamRewriter(tokens);
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
-        tempIfMap = new HashMap<>();
+        defined = new HashMap<>();
+        tempIfMaps = new Stack<>();
         tabAmount = 1;
         indexIncrease = 0;
         
@@ -76,7 +78,9 @@ public class NewJavaListener extends JavaBaseListener {
     	
     	// statement types
     	if(ctx.IF() != null) {
+    		HashMap<String, Integer> tempIfMap = new HashMap<>();
     		tempIfMap.putAll(varCounts);
+    		tempIfMaps.push(tempIfMap);
     		insideIfCondition = true;
     		conditionIntervals.push(new Pair<Integer,Integer>(ctx.parExpression().start.getStartIndex() + indexIncrease, -1));
     		ifStatementDepth++;
@@ -106,6 +110,10 @@ public class NewJavaListener extends JavaBaseListener {
     		
     		// obtain the changed variables
     		List<String> changedKeys = new ArrayList<>();
+    		
+    		// pop the current IF statement
+    		HashMap<String, Integer> tempIfMap = tempIfMaps.pop();
+    		
     		for(String v : varCounts.keySet()) {
     			if(!varCounts.get(v).equals(tempIfMap.get(v))) {
     				changedKeys.add(v);
@@ -130,20 +138,34 @@ public class NewJavaListener extends JavaBaseListener {
     			String phi_if = "";
     			// changed once
     			if((varCounts.get(v) - tempIfMap.get(v)) == 2) {
-    				phi_if = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + "," + v + "_" + (varCounts.get(v) - 2) + ");";
+    				if(ifStatementDepth > 0) {
+    					phi_if = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + "," + v + "_" + (varCounts.get(v) - 2) + ");";
+    				}
+    				else {
+    					phi_if = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + "," + v + "_" + (varCounts.get(v) - 2) + ");";
+    				}
     				
-    				String declr = varTypes.get(v) + " " + v + "_" + (varCounts.get(v)-1) + " = 0;" + "\n" + ws;
+    				String declr = varTypes.get(v) + " " + v + "_" + (varCounts.get(v)-1) + " = " + defaultVal(varTypes.get(v)) + ";" + "\n" + ws;
     				rewriter.insertBefore(ctx.start, declr);
         			indexIncrease += declr.length();
+        			defined.put(v + "_" + (varCounts.get(v)-1), true);
     			}
     			// else
     			else {
-    				phi_if = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+    				if(ifStatementDepth > 0) {
+    					phi_if = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+    				}
+    				else {
+    					phi_if = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+    				}
         			
     				for(int j=varCounts.get(v)-1; j>=tempIfMap.get(v)+1; j--) {
-    					String declr = varTypes.get(v) + " " + v + "_" + (j) + " = 0;" + "\n" + ws;
-        				rewriter.insertBefore(ctx.start, declr);
-            			indexIncrease += declr.length();
+    					if(!defined.containsKey(v + "_" + j)) {
+    						String declr = varTypes.get(v) + " " + v + "_" + (j) + " = " + defaultVal(varTypes.get(v)) + ";" + "\n" + ws;
+            				rewriter.insertBefore(ctx.start, declr);
+                			indexIncrease += declr.length();
+                			defined.put(v + "_" + j, true);
+    					}	
     				}
     			}
     			
@@ -170,6 +192,7 @@ public class NewJavaListener extends JavaBaseListener {
     		if(ifStatementDepth == 0) {
     			rewriter.insertBefore(t, varTypes.get(var) + " ");
         		indexIncrease += (varTypes.get(var) + " ").length();
+        		defined.put(var + "_" + varCounts.get(var), true);
     		}
     		
     	}
@@ -202,8 +225,11 @@ public class NewJavaListener extends JavaBaseListener {
     		indexIncrease += (" " + var + "_" + (varCounts.get(var)-1) + " " + op.getText().replaceAll("=", "")).length();
     		
     		// add initialization
-    		rewriter.insertBefore(t, varTypes.get(var) + " ");
-    		indexIncrease += (varTypes.get(var) + " ").length();
+    		if(ifStatementDepth == 0) {
+    			rewriter.insertBefore(t, varTypes.get(var) + " ");
+        		indexIncrease += (varTypes.get(var) + " ").length();
+        		defined.put(var + "_" + varCounts.get(var), true);
+    		}
     		
     		// replace operator
     		rewriter.replace(op, "=");
@@ -225,6 +251,7 @@ public class NewJavaListener extends JavaBaseListener {
     		// add initialization
     		rewriter.insertBefore(t, varTypes.get(var) + " ");
     		indexIncrease += (varTypes.get(var) + " ").length();
+    		defined.put(var + "_" + varCounts.get(var), true);
     		
     		// replace operator
     		rewriter.replace(op, " =");
@@ -246,7 +273,12 @@ public class NewJavaListener extends JavaBaseListener {
     	// if a variable is being referenced in an expression, then it must use the most recently declared version of that variable
     	if(varCounts.containsKey(ctx.getText())) {
     		// as long as at least one variable has been found (i.e. confirming that the leftside variable has been reached), and the leftside variable is equal to this current variable, then go back one index
-    		if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
+    		if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && ifStatementDepth > 0) {
+    			String variable = "_" + tempIfMaps.peek().get(ctx.getText());
+    			rewriter.insertAfter(ctx.start, variable);
+        		indexIncrease += variable.length();
+    		}
+    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1);
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
@@ -309,5 +341,17 @@ public class NewJavaListener extends JavaBaseListener {
     		
     	}
     	
+    }
+    
+    // helper function that determines the default value of a given variable type
+    public String defaultVal(String type) {
+    	switch(type) {
+    		case "int":
+    			return "0";
+    		case "String":
+    			return "\"\"";
+    		default:
+    			return "null";
+    	}
     }
 }

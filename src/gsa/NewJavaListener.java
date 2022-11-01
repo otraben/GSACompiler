@@ -22,7 +22,7 @@ public class NewJavaListener extends JavaBaseListener {
 
 	public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
 	public Map<String, String> varTypes;	// keeps track of the type of each variable
-	public Map<String, Boolean> defined;
+	public Map<String, Boolean> defined;	// for if statements
 	public Stack<HashMap<String, Integer>> tempIfMaps;
     public TokenStreamRewriter rewriter;
     public int tabAmount;
@@ -39,16 +39,29 @@ public class NewJavaListener extends JavaBaseListener {
     public String currentAssignee = "";
     public boolean assignedVariableIndexed = false;
     
+    // while loop stuff
+    public boolean insideWhileCondition = false;
+    public int whileConditionDepth = 0;
+    public Stack<List<String>> firstVarFound;	// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
+    public int whileDepth = 0;
+    public Stack<HashMap<String,Integer>> tempWhileMaps;
+    public Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;
+    public Stack<HashMap<String,JavaParser.PrimaryContext>> lastInstance;	// keeps track of the last instance of a variable in a while loop
+    
     public NewJavaListener(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
         defined = new HashMap<>();
         tempIfMaps = new Stack<>();
+        tempWhileMaps = new Stack<>();
         tabAmount = 1;
         indexIncrease = 0;
         
         conditionIntervals = new Stack<>();
+        firstVarFound = new Stack<>();
+        phiEntryVars = new Stack<>();
+        lastInstance = new Stack<>();
     }
     
     @Override
@@ -86,16 +99,15 @@ public class NewJavaListener extends JavaBaseListener {
     		ifStatementDepth++;
     	}
     	else if(ctx.WHILE() != null) {
-    		
-    		// tab amount
-			String ws = "";
-			for(int i=0; i<tabAmount; i++) {
-				ws += '\t';
-			}
-    		
-    		String phi_entry = "Phi.Entry();" + "\n" + ws;
-    		rewriter.insertBefore(ctx.start, phi_entry);
-			indexIncrease += phi_entry.length();
+    		HashMap<String, Integer> tempWhileMap = new HashMap<>();
+    		tempWhileMap.putAll(varCounts);
+    		tempWhileMaps.push(tempWhileMap);
+    		insideWhileCondition = true;
+    		conditionIntervals.push(new Pair<Integer,Integer>(ctx.parExpression().start.getStartIndex() + indexIncrease, -1));
+    		firstVarFound.push(new ArrayList<>());
+    		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
+    		lastInstance.push(new HashMap<String,JavaParser.PrimaryContext>());
+    		whileDepth++;
     	}
 
 
@@ -159,6 +171,7 @@ public class NewJavaListener extends JavaBaseListener {
     					phi_if = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
     				}
         			
+    				// declares all of the variables that need to be referenced outside of the if statement
     				for(int j=varCounts.get(v)-1; j>=tempIfMap.get(v)+1; j--) {
     					if(!defined.containsKey(v + "_" + j)) {
     						String declr = varTypes.get(v) + " " + v + "_" + (j) + " = " + defaultVal(varTypes.get(v)) + ";" + "\n" + ws;
@@ -175,6 +188,77 @@ public class NewJavaListener extends JavaBaseListener {
     		}
 
     	}
+    	else if(ctx.WHILE() != null) {
+    		whileDepth--;
+    		firstVarFound.pop();
+    		
+    		// add the phi entry functions
+    		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
+    		for(JavaParser.PrimaryContext t : tokens.keySet()) {
+    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ")";
+    			rewriter.replace(t.start,t.stop,txt);
+    			indexIncrease += txt.length();
+    		}
+    		
+    		// add initializations OUTSIDE of the while loop for all last-instance variables
+    		HashMap<String,JavaParser.PrimaryContext> lastInstanceVars = lastInstance.pop();
+    		boolean first = true;
+    		for(String v : lastInstanceVars.keySet()) {
+    			// tab amount
+    			String ws = "";
+    			for(int i=0; i<tabAmount; i++) {
+    				ws += '\t';
+    			}
+    			
+    			String initialization = varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + defaultVal(varTypes.get(v)) + ";\n" + ws;
+    		
+    			rewriter.insertBefore(ctx.start, initialization);
+    			indexIncrease += initialization.length();
+    		}
+    		
+    		// obtain the changed variables
+    		List<String> changedKeys = new ArrayList<>();
+    		
+    		// pop the current WHILE statement
+    		HashMap<String, Integer> tempWhileMap = tempWhileMaps.pop();
+    		
+    		for(String v : varCounts.keySet()) {
+    			if(!varCounts.get(v).equals(tempWhileMap.get(v))) {
+    				changedKeys.add(v);
+    			}
+    		}
+    		
+    		// get updated condition
+			Pair<Integer,Integer> interval = conditionIntervals.pop();
+			String condition = rewriter.getText().substring(interval.a, interval.b);
+    		
+    		// phi_exit (what is the point of this function?)
+//    		for(String v : changedKeys) {
+//    			varCounts.put(v, varCounts.get(v)+1);
+//    			
+//    			// tab amount
+//    			String ws = "";
+//    			for(int i=0; i<tabAmount; i++) {
+//    				ws += '\t';
+//    			}
+//    				
+//    			// check the amount of times the variable was changed (THIS WILL NEED TO BE REVISITED)
+//    			String phi_exit = "";
+//
+//				if(whileDepth > 0) {
+//					//phi_if = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+//				}
+//				else {
+//					phi_exit = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.Exit(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+//				}
+//    			
+//    			rewriter.insertAfter(ctx.stop, phi_exit);
+//    			indexIncrease += phi_exit.length();
+//    			
+//    		}
+    
+    	
+    	}
 
 
     }
@@ -188,8 +272,8 @@ public class NewJavaListener extends JavaBaseListener {
     		currentAssignee = var;
     		assignedVariableIndexed = false;
     		
-    		// add initialization
-    		if(ifStatementDepth == 0) {
+    		// add initialization (except for variables in while loops)
+    		if(ifStatementDepth == 0 && whileDepth == 0) {
     			rewriter.insertBefore(t, varTypes.get(var) + " ");
         		indexIncrease += (varTypes.get(var) + " ").length();
         		defined.put(var + "_" + varCounts.get(var), true);
@@ -272,26 +356,55 @@ public class NewJavaListener extends JavaBaseListener {
     public void enterPrimary(JavaParser.PrimaryContext ctx) {
     	// if a variable is being referenced in an expression, then it must use the most recently declared version of that variable
     	if(varCounts.containsKey(ctx.getText())) {
-    		// as long as at least one variable has been found (i.e. confirming that the leftside variable has been reached), and the leftside variable is equal to this current variable, then go back one index
-    		if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && ifStatementDepth > 0) {
+    		if(insideWhileCondition) {
+    			// we know this condition variable will need to be replaced with a phi entry function (this will be done later)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+    			
+    		}
+    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && whileDepth > 0 && !firstVarFound.peek().contains(ctx.getText())) {
+    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    			
+    			// add this var to the list
+    			firstVarFound.peek().add(ctx.getText());
+    		
+    		}
+    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && ifStatementDepth > 0) {
     			String variable = "_" + tempIfMaps.peek().get(ctx.getText());
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
     		}
+    		// as long as at least one variable has been found (i.e. confirming that the left-side variable has been reached), and the left-side variable is equal to this current variable, then go back one index
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1);
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
     		}
+    		// this is the left-side variable
     		else {
     			String variable = "_" + varCounts.get(ctx.getText());
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
         		assignedVariableIndexed = true;
+        		
+        		// handle initializations for variables inside while loops
+        		if(whileDepth > 0) {
+        			if(lastInstance.peek().keySet().contains(ctx.getText())) {
+        				String initialization = varTypes.get(ctx.getText()) + " ";
+        				rewriter.insertBefore(lastInstance.peek().get(ctx.getText()).start, initialization);
+        				indexIncrease += initialization.length();
+        				
+        				lastInstance.peek().put(ctx.getText(), ctx);
+        			}
+        			else {
+        				lastInstance.peek().put(ctx.getText(), ctx);
+        			}
+        		}
     		}
 
     	}
     }
+    
     
     @Override 
     public void enterVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) { 
@@ -323,6 +436,9 @@ public class NewJavaListener extends JavaBaseListener {
     	if(insideIfCondition) {
     		ifConditionDepth += 1;
     	}
+    	else if(insideWhileCondition) {
+    		whileConditionDepth += 1;
+    	}
     	
     }
     
@@ -339,6 +455,16 @@ public class NewJavaListener extends JavaBaseListener {
     			conditionIntervals.push(new Pair<Integer,Integer>(start, ctx.stop.getStopIndex() + indexIncrease + 1));
     		}
     		
+    	}
+    	else if(insideWhileCondition) {
+    		whileConditionDepth--;
+    		
+    		// if condition is done
+    		if(whileConditionDepth == 0) {
+    			insideWhileCondition = false;
+    			Integer start = conditionIntervals.pop().a;
+    			conditionIntervals.push(new Pair<Integer,Integer>(start, ctx.stop.getStopIndex() + indexIncrease + 1));
+    		}
     	}
     	
     }

@@ -10,5 +10,14 @@ public class Phi {
 			return b;
 		}
 	}
+	
+	public static <T> T Entry(boolean cond, T a, T b) {
+		if(cond) {
+			return b;
+		}
+		else {
+			return a;
+		}
+	}
 
 }

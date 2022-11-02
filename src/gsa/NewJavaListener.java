@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenSource;
 import org.antlr.v4.runtime.TokenStreamRewriter;
+import org.antlr.v4.runtime.WritableToken;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.misc.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -47,6 +49,10 @@ public class NewJavaListener extends JavaBaseListener {
     public Stack<HashMap<String,Integer>> tempWhileMaps;
     public Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;
     public Stack<HashMap<String,JavaParser.PrimaryContext>> lastInstance;	// keeps track of the last instance of a variable in a while loop
+    public int whileBoolCount = 0;
+    public boolean whileBlock = false;
+    public HashMap<JavaParser.StatementContext,String> whileBools;
+    public List<Pair<String,Integer>> variablesToBeDefined;
     
     public NewJavaListener(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);
@@ -62,6 +68,8 @@ public class NewJavaListener extends JavaBaseListener {
         firstVarFound = new Stack<>();
         phiEntryVars = new Stack<>();
         lastInstance = new Stack<>();
+        whileBools = new HashMap<>();
+        variablesToBeDefined = new ArrayList<>();
     }
     
     @Override
@@ -79,6 +87,22 @@ public class NewJavaListener extends JavaBaseListener {
     @Override
     public void enterBlock(JavaParser.BlockContext ctx) {
     	tabAmount += 1;
+    	
+    	// check if this is a while block
+    	if(whileBlock) {
+    		whileBlock = false;
+    		
+    		// tab amount
+			String ws = "";
+			for(int i=0; i<tabAmount-1; i++) {
+				ws += '\t';
+			}
+    		
+    		// if it is, add the whilebool variable at the end of the block
+    		String whileBool = "\twhileBool_" + (whileBoolCount++) + " = true;\n" + ws;
+    		rewriter.insertBefore(ctx.RBRACE().getSymbol(), whileBool);
+    		indexIncrease += whileBool.length();
+    	}
     }
     
     @Override
@@ -108,6 +132,22 @@ public class NewJavaListener extends JavaBaseListener {
     		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
     		lastInstance.push(new HashMap<String,JavaParser.PrimaryContext>());
     		whileDepth++;
+    		whileBlock = true;
+    		
+    		// define the whilebool variable prior to entering the loop
+    		// tab amount
+			String ws = "";
+			for(int i=0; i<tabAmount; i++) {
+				ws += '\t';
+			}
+    		
+    		// if it is, add the whilebool variable at the end of the block
+    		String whileBool = "boolean whileBool_" + (whileBoolCount) + " = false;\n" + ws;
+    		rewriter.insertBefore(ctx.start, whileBool);
+    		indexIncrease += whileBool.length();
+    		
+    		// add the whileloop and whilebool pair to the hashmap
+    		whileBools.put(ctx, "whileBool_" + whileBoolCount);
     	}
 
 
@@ -195,10 +235,27 @@ public class NewJavaListener extends JavaBaseListener {
     		// add the phi entry functions
     		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
     		for(JavaParser.PrimaryContext t : tokens.keySet()) {
-    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ")";
+    			String txt = "Phi.Entry(" + whileBools.get(ctx) + "," + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ")";
     			rewriter.replace(t.start,t.stop,txt);
     			indexIncrease += txt.length();
     		}
+    		
+    		// define extra variables that need to be defined outside this loop
+    		for(Pair<String,Integer> p : variablesToBeDefined) {
+    			// tab amount
+    			String ws = "";
+    			for(int i=0; i<tabAmount; i++) {
+    				ws += '\t';
+    			}
+    			
+    			String init = varTypes.get(p.a) + " " + p.a + "_" + p.b + " = " + defaultVal(varTypes.get(p.a)) + ";\n" + ws;
+    			rewriter.insertBefore(ctx.start, init);
+    			indexIncrease += init.length();
+    		}
+    		// make a temp list for a few checks
+    		List<Pair<String,Integer>> tempVariablesToBeDefined = variablesToBeDefined;
+    		// reset the list
+    		variablesToBeDefined = new ArrayList<>();
     		
     		// add initializations OUTSIDE of the while loop for all last-instance variables
     		HashMap<String,JavaParser.PrimaryContext> lastInstanceVars = lastInstance.pop();
@@ -212,8 +269,34 @@ public class NewJavaListener extends JavaBaseListener {
     			
     			String initialization = varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + defaultVal(varTypes.get(v)) + ";\n" + ws;
     		
-    			rewriter.insertBefore(ctx.start, initialization);
-    			indexIncrease += initialization.length();
+    			Pair<String,Integer> tempPair = new Pair<String,Integer>(v,varCounts.get(v));
+    			if(!tempVariablesToBeDefined.contains(tempPair)) {
+    				rewriter.insertBefore(ctx.start, initialization);
+    				indexIncrease += initialization.length();
+    			}
+    			
+    			// also, add the phi exit variables AFTER the while loop
+    			varCounts.put(v, varCounts.get(v) + 1);
+    			String phi_exit = "";
+    			if(whileDepth > 0) {
+    				phi_exit = "\n" + ws + v + "_" + varCounts.get(v) + " = " + v + "_" + (varCounts.get(v)-1) + ";";
+    				variablesToBeDefined.add(new Pair<String,Integer>(v, varCounts.get(v)));
+    				
+    				// then check to see if any prior instances of this variable need to be initialized
+    				if(lastInstance.peek().keySet().contains(v)) {
+        				String initialize = varTypes.get(v) + " ";
+        				rewriter.insertBefore(lastInstance.peek().get(v).start, initialize);
+        				indexIncrease += initialize.length();
+        				
+        				// idk if this is possible
+        				//lastInstance.peek().put(ctx.getText(), ctx);
+        			}
+    			}
+    			else {
+    				phi_exit = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + v + "_" + (varCounts.get(v)-1) + ";";
+    			}
+    			rewriter.insertAfter(ctx.stop, phi_exit);
+    			indexIncrease += phi_exit.length();
     		}
     		
     		// obtain the changed variables
@@ -249,7 +332,8 @@ public class NewJavaListener extends JavaBaseListener {
 //					//phi_if = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.If(" + condition + "," + v + "_" + (varCounts.get(v) - 2) + "," + v + "_" + (varCounts.get(v) - 1) + ");";
 //				}
 //				else {
-//					phi_exit = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.Exit(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+//					//phi_exit = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = Phi.Exit(" + condition + "," + v + "_" + (varCounts.get(v) - 1) + ");";
+//					phi_exit = "\n" + ws + varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + v + "_" + (varCounts.get(v)-1) + ";";
 //				}
 //    			
 //    			rewriter.insertAfter(ctx.stop, phi_exit);

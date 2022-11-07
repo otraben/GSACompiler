@@ -9,7 +9,7 @@ public class Test {
         int y_1 = 0;
 		int y_2 = 0;
 		if((x_1 == (2 * y_0))) {
-        	y_1 = 10;
+        	int y_1 = 10;
         }
         else {
         	y_2 = 12;

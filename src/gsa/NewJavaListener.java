@@ -40,6 +40,7 @@ public class NewJavaListener extends JavaBaseListener {
     // assignment stuff
     public String currentAssignee = "";
     public boolean assignedVariableIndexed = false;
+    public Stack<HashMap<String,JavaParser.PrimaryContext>> lastInstance;	// keeps track of the last instance of a variable in a block
     
     // while loop stuff
     public boolean insideWhileCondition = false;
@@ -48,7 +49,6 @@ public class NewJavaListener extends JavaBaseListener {
     public int whileDepth = 0;
     public Stack<HashMap<String,Integer>> tempWhileMaps;
     public Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;
-    public Stack<HashMap<String,JavaParser.PrimaryContext>> lastInstance;	// keeps track of the last instance of a variable in a while loop
     public int whileBoolCount = 0;
     public boolean whileBlock = false;
     public HashMap<JavaParser.StatementContext,String> whileBools;
@@ -120,6 +120,7 @@ public class NewJavaListener extends JavaBaseListener {
     		tempIfMaps.push(tempIfMap);
     		insideIfCondition = true;
     		conditionIntervals.push(new Pair<Integer,Integer>(ctx.parExpression().start.getStartIndex() + indexIncrease, -1));
+    		lastInstance.push(new HashMap<>());
     		ifStatementDepth++;
     	}
     	else if(ctx.WHILE() != null) {
@@ -148,6 +149,7 @@ public class NewJavaListener extends JavaBaseListener {
     		
     		// add the whileloop and whilebool pair to the hashmap
     		whileBools.put(ctx, "whileBool_" + whileBoolCount);
+ 
     	}
 
 
@@ -159,6 +161,7 @@ public class NewJavaListener extends JavaBaseListener {
     	// statement types
     	if(ctx.IF() != null) {
     		ifStatementDepth--;
+    		lastInstance.pop();
     		
     		// obtain the changed variables
     		List<String> changedKeys = new ArrayList<>();
@@ -248,7 +251,15 @@ public class NewJavaListener extends JavaBaseListener {
     				ws += '\t';
     			}
     			
-    			String init = varTypes.get(p.a) + " " + p.a + "_" + p.b + " = " + defaultVal(varTypes.get(p.a)) + ";\n" + ws;
+    			String init = "";
+    			// if the variable is not the first instance of this variable it's default value should be the value of the previous variable
+    			if(varCounts.get(p.a) > 0) {
+    				init = varTypes.get(p.a) + " " + p.a + "_" + p.b + " = " + p.a + "_" + (tempWhileMaps.peek().get(p.a)) + ";\n" + ws;
+    			}
+    			else {
+    				init = varTypes.get(p.a) + " " + p.a + "_" + p.b + " = " + defaultVal(varTypes.get(p.a)) + ";\n" + ws;
+    			}
+    			
     			rewriter.insertBefore(ctx.start, init);
     			indexIncrease += init.length();
     		}
@@ -267,7 +278,15 @@ public class NewJavaListener extends JavaBaseListener {
     				ws += '\t';
     			}
     			
-    			String initialization = varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + defaultVal(varTypes.get(v)) + ";\n" + ws;
+    			String initialization = "";
+    			// if the variable is not the first instance of this variable it's default value should be the value of the previous variable
+    			if(varCounts.get(v) > 0) {
+    				initialization = varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + v + "_" + tempWhileMaps.peek().get(v) + ";\n" + ws;
+    			}
+    			else {
+    				initialization = varTypes.get(v) + " " + v + "_" + varCounts.get(v) + " = " + defaultVal(varTypes.get(v)) + ";\n" + ws;
+    			}
+    			
     		
     			Pair<String,Integer> tempPair = new Pair<String,Integer>(v,varCounts.get(v));
     			if(!tempVariablesToBeDefined.contains(tempPair)) {
@@ -289,7 +308,10 @@ public class NewJavaListener extends JavaBaseListener {
         				indexIncrease += initialize.length();
         				
         				// idk if this is possible
-        				//lastInstance.peek().put(ctx.getText(), ctx);
+        				//lastInstance.peek().put(v, ctx);
+        				
+        				// remove last instance
+        				lastInstance.peek().remove(v);
         			}
     			}
     			else {
@@ -445,6 +467,7 @@ public class NewJavaListener extends JavaBaseListener {
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
     			
     		}
+    		// inside a while loop AND left/right side variables are equivalent
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && whileDepth > 0 && !firstVarFound.peek().contains(ctx.getText())) {
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
@@ -452,6 +475,18 @@ public class NewJavaListener extends JavaBaseListener {
     			// add this var to the list
     			firstVarFound.peek().add(ctx.getText());
     		
+    		}
+    		// inside a while loop AND left/right side variables are NOT equivalent
+    		else if(assignedVariableIndexed && whileDepth > 0 && !firstVarFound.peek().contains(ctx.getText())) {
+    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    		
+    		}
+    		if(insideIfCondition) {
+    			String variable = "_" + varCounts.get(ctx.getText());
+    			rewriter.insertAfter(ctx.start, variable);
+        		indexIncrease += variable.length();
+        		assignedVariableIndexed = true;
     		}
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && ifStatementDepth > 0) {
     			String variable = "_" + tempIfMaps.peek().get(ctx.getText());
@@ -472,7 +507,7 @@ public class NewJavaListener extends JavaBaseListener {
         		assignedVariableIndexed = true;
         		
         		// handle initializations for variables inside while loops
-        		if(whileDepth > 0) {
+        		if(whileDepth > 0 || ifStatementDepth > 0) {
         			if(lastInstance.peek().keySet().contains(ctx.getText())) {
         				String initialization = varTypes.get(ctx.getText()) + " ";
         				rewriter.insertBefore(lastInstance.peek().get(ctx.getText()).start, initialization);

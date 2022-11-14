@@ -120,8 +120,19 @@ public class NewJavaListener extends JavaBaseListener {
     		tempIfMaps.push(tempIfMap);
     		insideIfCondition = true;
     		conditionIntervals.push(new Pair<Integer,Integer>(ctx.parExpression().start.getStartIndex() + indexIncrease, -1));
-    		lastInstance.push(new HashMap<>());
+    		//lastInstance.push(new HashMap<>());
     		ifStatementDepth++;
+    		
+    		// add another map for each else-if/else block
+    		JavaParser.StatementContext context = ctx;
+    		int ifBlockCount = 1;
+    		while(context.ELSE() != null) {
+    			//lastInstance.push(new HashMap<>());
+    			context = context.statement(1);
+    			ifBlockCount++;
+    		}
+    		System.out.println(ifBlockCount);
+    		
     	}
     	else if(ctx.WHILE() != null) {
     		HashMap<String, Integer> tempWhileMap = new HashMap<>();
@@ -161,7 +172,7 @@ public class NewJavaListener extends JavaBaseListener {
     	// statement types
     	if(ctx.IF() != null) {
     		ifStatementDepth--;
-    		lastInstance.pop();
+    		//lastInstance.pop();
     		
     		// obtain the changed variables
     		List<String> changedKeys = new ArrayList<>();
@@ -507,7 +518,7 @@ public class NewJavaListener extends JavaBaseListener {
         		assignedVariableIndexed = true;
         		
         		// handle initializations for variables inside while loops
-        		if(whileDepth > 0 || ifStatementDepth > 0) {
+        		if(whileDepth > 0) {
         			if(lastInstance.peek().keySet().contains(ctx.getText())) {
         				String initialization = varTypes.get(ctx.getText()) + " ";
         				rewriter.insertBefore(lastInstance.peek().get(ctx.getText()).start, initialization);

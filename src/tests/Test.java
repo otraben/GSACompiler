@@ -9,6 +9,9 @@ public class Test {
         if((x == (2 * y))) {
         	y = 10;
         }
+        else if(x==2) {
+        	y = 2;
+        }
         else {
         	y = 12;
         }

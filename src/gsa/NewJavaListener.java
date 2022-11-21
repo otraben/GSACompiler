@@ -482,7 +482,7 @@ public class NewJavaListener extends JavaBaseListener {
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
     		
     		}
-    		if(insideIfCondition) {
+    		else if(insideIfCondition) {
     			String variable = "_" + varCounts.get(ctx.getText());
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();

@@ -3,18 +3,32 @@ package outputs;
 // tests basic SSA and a basic if/else statement
 public class Test {
     public static void main(String[] args) {
-        int x_0 = 0;
-        int x_1 = 5;
-        int y_0 = 7;
-        int y_1 = 0;
-		int y_2 = 0;
-		if((x_1 == (2 * y_0))) {
-        	int y_1 = 10;
+		// all variables are declared to null
+		Var<Integer> x_0 = null;
+		Var<Integer> x_1 = null;
+		Var<Integer> y_0 = null;
+		Var<Integer> y_1 = null;
+		Var<Integer> y_2 = null;
+		Var<Integer> x_2 = null;
+		Var<Integer> y_3 = null;
+		Var<Integer> x_3 = null;
+		Var<Integer> y_4 = null;
+        
+		/* PROGRAM STARTS */
+		x_0 = new Var<Integer>(0);
+        x_1 = new Var<Integer>(5);
+        y_0 = new Var<Integer>(7);
+        y_1 = new Var<Integer>(4);
+        if((x_1.value == (2 * y_1.value))) {
+        	y_2 = new Var<Integer>(10);
+        	x_2 = new Var<Integer>(5);
         }
-        else {
-        	y_2 = 12;
+        else if (x_2.value == 1) {
+        	y_3 = new Var<Integer>(12);
         }
-		int y_3 = Phi.If(((x_1 == (2 * y_0))),y_1,y_2);
-        System.out.println(y_3);
+		x_3 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_2.value == 1),x_null,x_1));
+		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,Phi.If((x_2.value == 1),y_3,y_1));
+        
+        System.out.println(y_4.value);
     }
 }

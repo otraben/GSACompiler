@@ -41,7 +41,8 @@ public class Translator {
     void translate(){
         walker = new ParseTreeWalker();
         
-        NewJavaListener listener = new NewJavaListener(tokens);
+        //NewJavaListener listener = new NewJavaListener(tokens);
+        GSAConverter listener = new GSAConverter(tokens);	// object-oriented version
         walker.walk((ParseTreeListener)listener, parseTree);
         parsedCode = listener.rewriter.getText();
         

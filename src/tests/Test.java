@@ -14,6 +14,9 @@ public class Test {
         else if (x == 1) {
         	y = 12;
         }
+        else {
+        	x = 5;
+        }
         
         System.out.println(y);
     }

@@ -56,6 +56,7 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<List<HashMap<String,Integer>>> ifChainsLastDefinedVars;	// stack of if-chains - list of each block in the if-chain - map of each variable/count pair in the given if block
 	Stack<Integer> ifChainsLastDefinedVarsIndex;
 	Stack<JavaParser.StatementContext> finalIfBlocks;
+	Stack<HashMap<String, Integer>> beforeIfChain; 		// same as prevVarCounts, but specifically used for if statement conditions
     
     public GSAConverter(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);
@@ -72,6 +73,7 @@ public class GSAConverter extends JavaBaseListener {
         ifChainsLastDefinedVars = new Stack<>();
         ifChainsLastDefinedVarsIndex = new Stack<>();
         finalIfBlocks = new Stack<>();
+        beforeIfChain = new Stack<>();
     }
     
     @Override
@@ -202,6 +204,7 @@ public class GSAConverter extends JavaBaseListener {
             	preVarCounts.putAll(varCounts);
             	prevVarCounts.push(preVarCounts);
             	prevVarCounts.push(preVarCounts);
+            	beforeIfChain.push(preVarCounts);
     			
     		}
     	}
@@ -250,12 +253,14 @@ public class GSAConverter extends JavaBaseListener {
             	if(!finalIfBlocks.isEmpty() && finalIfBlocks.peek().equals(ctx)) {
             		finalIfBlocks.pop();
             		prevVarCounts.pop(); // pop the newly updated one
+            		beforeIfChain.pop();
             		
             		/* PHI-IF */
         			JavaParser.StatementContext par = ifParents.pop();
         			
         			// add a phi-if function for every changed variable
         			List<HashMap<String,Integer>> chain = ifChainsLastDefinedVars.pop();
+        			ifChainsLastDefinedVarsIndex.pop();
         			HashMap<String,Integer> definedPriorToIfChain = prevVarCounts.pop();
         			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
         			for(String v : varCounts.keySet()) {
@@ -273,7 +278,15 @@ public class GSAConverter extends JavaBaseListener {
         					if(conditions.size() > 1) {
         						// loop through all conditions
     	    					for(int i = 0; i < conditions.size()-1; i++) {
-    	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + chain.get(i).get(v) + ",";
+    	    						// always check to make sure the variable was changed in each block
+    	    						Integer count = 0;
+    	    						if(chain.get(i).get(v) == null) {
+    	    							count = definedPriorToIfChain.get(v);
+    	    						}
+    	    						else {
+    	    							count = chain.get(i).get(v);
+    	    						}
+    	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + count + ",";
     	    					}
     	    					// number of closing brackets
     	    					String closingBrackets = ")";
@@ -281,8 +294,17 @@ public class GSAConverter extends JavaBaseListener {
     	    						closingBrackets += ")";
     	    					}
     	    					
+    	    					// always check to make sure the variable was changed in each block
+	    						Integer count = 0;
+	    						if(chain.get(conditions.size()-1).get(v) == null) {
+	    							count = definedPriorToIfChain.get(v);
+	    						}
+	    						else {
+	    							count = chain.get(conditions.size()-1).get(v);
+	    						}
+    	    					
     	    					// else case
-    	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + chain.get(conditions.size()-1).get(v) + "," + v + "_" + definedPriorToIfChain.get(v) + closingBrackets + ";";
+    	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + definedPriorToIfChain.get(v) + closingBrackets + ";";
 
     	    					// add declaration
     	    					nullDeclaration(v);
@@ -291,7 +313,7 @@ public class GSAConverter extends JavaBaseListener {
     	    					indexIncrease += phi_if.length();
         					}
         					else {
-        						// just an if-else statement
+        						// just an if statement
     	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + chain.get(0).get(v) + "," + v + "_" + definedPriorToIfChain.get(v) + ");";
     	    					
     	    					// add declaration
@@ -316,12 +338,14 @@ public class GSAConverter extends JavaBaseListener {
     		// on the else statement (END OF AN IF CHAIN)
     		else {
     			nextIfBlocks.pop();
+    			beforeIfChain.pop();
     			
     			/* PHI-IF */
     			JavaParser.StatementContext par = ifParents.pop();
     			
     			// add a phi-if function for every changed variable
     			List<HashMap<String,Integer>> chain = ifChainsLastDefinedVars.pop();
+    			ifChainsLastDefinedVarsIndex.pop();
     			HashMap<String,Integer> definedPriorToIfChain = prevVarCounts.pop();
     			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
     			for(String v : varCounts.keySet()) {
@@ -339,7 +363,15 @@ public class GSAConverter extends JavaBaseListener {
     					if(conditions.size() > 1) {
     						// loop through all conditions
 	    					for(int i = 0; i < conditions.size()-1; i++) {
-	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + chain.get(i).get(v) + ",";
+	    						// always check to make sure the variable was changed in each block
+	    						Integer count = 0;
+	    						if(chain.get(i).get(v) == null) {
+	    							count = definedPriorToIfChain.get(v);
+	    						}
+	    						else {
+	    							count = chain.get(i).get(v);
+	    						}
+	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + count + ",";
 	    					}
 	    					// number of closing brackets
 	    					String closingBrackets = ")";
@@ -347,8 +379,24 @@ public class GSAConverter extends JavaBaseListener {
 	    						closingBrackets += ")";
 	    					}
 	    					
+	    					// always check to make sure the variable was changed in each block
+    						Integer count = 0;
+    						if(chain.get(conditions.size()-1).get(v) == null) {
+    							count = definedPriorToIfChain.get(v);
+    						}
+    						else {
+    							count = chain.get(conditions.size()-1).get(v);
+    						}
+    						Integer elseCount = 0;
+    						if(chain.get(conditions.size()).get(v) == null) {
+    							elseCount = definedPriorToIfChain.get(v);
+    						}
+    						else {
+    							elseCount = chain.get(conditions.size()).get(v);
+    						}
+	    					
 	    					// else case
-	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + chain.get(conditions.size()-1).get(v) + "," + v + "_" + chain.get(conditions.size()).get(v) + closingBrackets + ";";
+	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + elseCount + closingBrackets + ";";
 
 	    					// add declaration
 	    					nullDeclaration(v);
@@ -357,8 +405,24 @@ public class GSAConverter extends JavaBaseListener {
 	    					indexIncrease += phi_if.length();
     					}
     					else {
+    						// always check to make sure the variable was changed in each block
+    						Integer count = 0;
+    						if(chain.get(0).get(v) == null) {
+    							count = definedPriorToIfChain.get(v);
+    						}
+    						else {
+    							count = chain.get(0).get(v);
+    						}
+    						Integer elseCount = 0;
+    						if(chain.get(1).get(v) == null) {
+    							elseCount = definedPriorToIfChain.get(v);
+    						}
+    						else {
+    							elseCount = chain.get(1).get(v);
+    						}
+    						
     						// just an if-else statement
-	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + chain.get(0).get(v) + "," + v + "_" + chain.get(1).get(v) + ");";
+	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + elseCount + ");";
 	    					
 	    					// add declaration
 	    					nullDeclaration(v);
@@ -477,7 +541,7 @@ public class GSAConverter extends JavaBaseListener {
     	if(varCounts.containsKey(ctx.getText())) {
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		if(insideCondition) {
-    			String variable = "_" + varCounts.get(ctx.getText()) + ".value";
+    			String variable = "_" + beforeIfChain.peek().get(ctx.getText()) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
     		}

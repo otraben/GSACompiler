@@ -12,6 +12,7 @@ public class Test {
 		Var<Integer> x_2 = null;
 		Var<Integer> y_3 = null;
 		Var<Integer> x_3 = null;
+		Var<Integer> x_4 = null;
 		Var<Integer> y_4 = null;
         
 		/* PROGRAM STARTS */
@@ -23,11 +24,14 @@ public class Test {
         	y_2 = new Var<Integer>(10);
         	x_2 = new Var<Integer>(5);
         }
-        else if (x_2.value == 1) {
+        else if (x_1.value == 1) {
         	y_3 = new Var<Integer>(12);
         }
-		x_3 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_2.value == 1),x_null,x_1));
-		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,Phi.If((x_2.value == 1),y_3,y_1));
+        else {
+        	x_3 = new Var<Integer>(5);
+        }
+		x_4 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_1.value == 1),x_1,x_3));
+		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,Phi.If((x_1.value == 1),y_3,y_1));
         
         System.out.println(y_4.value);
     }

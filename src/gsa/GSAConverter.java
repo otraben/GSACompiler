@@ -457,8 +457,9 @@ public class GSAConverter extends JavaBaseListener {
 		nullDeclaration(var);
     	
     	// create the variable object
-    	Token rightSide = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-    	newVariable(var, rightSide);
+    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+    	newVariable(var, start, end);
     	
     }
     
@@ -501,8 +502,9 @@ public class GSAConverter extends JavaBaseListener {
         	indexIncrease += decl.length();
         	
         	// create the variable object
-        	Token rightSide = ctx.expression().get(1).start;
-        	newVariable(var, rightSide);
+        	Token start = ctx.expression().get(1).start;
+        	Token end = ctx.expression().get(1).stop;
+        	newVariable(var, start, end);
     	}
     	
     }
@@ -584,11 +586,11 @@ public class GSAConverter extends JavaBaseListener {
     }
     
     // creates the right-hand side of an assignment statement
-    public void newVariable(String var, Token rightSide) {
+    public void newVariable(String var, Token start, Token end) {
     	String before = "new Var<" + varTypes.get(var) + ">(";
     	String after = ")";
-    	rewriter.insertBefore(rightSide, before);
-    	rewriter.insertAfter(rightSide, after);
+    	rewriter.insertBefore(start, before);
+    	rewriter.insertAfter(end, after);
     	indexIncrease += before.length() + after.length();
     }
     

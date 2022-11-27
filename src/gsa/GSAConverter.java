@@ -437,6 +437,7 @@ public class GSAConverter extends JavaBaseListener {
     		
     		
     	}
+    	
     }
     
     @Override 
@@ -497,21 +498,112 @@ public class GSAConverter extends JavaBaseListener {
     		currentAssignee = var;
     		
     		// declare this variable at the top
-    		String decl = "\n\t\tVar<" + varTypes.get(var) + "> " + var + "_" + varCounts.get(var) + " = null;";
-        	rewriter.insertAfter(currentFirstLine, decl);
-        	indexIncrease += decl.length();
+    		nullDeclaration(var);
+
         	
-        	// create the variable object
-        	Token start = ctx.expression().get(1).start;
-        	Token end = ctx.expression().get(1).stop;
-        	newVariable(var, start, end);
+    	}
+    	else if(ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
+    			ctx.AND_ASSIGN() != null || ctx.OR_ASSIGN() != null || ctx.XOR_ASSIGN() != null || ctx.MOD_ASSIGN() != null || 
+    			ctx.LSHIFT_ASSIGN() != null || ctx.RSHIFT_ASSIGN() != null || ctx.URSHIFT_ASSIGN() != null) {
+    		
+    		// first, increase the count for this variable
+    		Token t = ctx.start;
+    		String var = t.getText();
+    		varCounts.put(var, varCounts.get(var)+1);
+    		
+    		// set the current assignee to this variable
+    		assignedVariableIndexed = false;
+    		currentAssignee = var;
+    		
+    		// get operator
+    		Token op = 	ctx.ADD_ASSIGN() != null ? ctx.ADD_ASSIGN().getSymbol() : 
+				ctx.SUB_ASSIGN() != null ? ctx.SUB_ASSIGN().getSymbol() :
+				ctx.MUL_ASSIGN() != null ? ctx.MUL_ASSIGN().getSymbol() :
+				ctx.DIV_ASSIGN() != null ? ctx.DIV_ASSIGN().getSymbol() :
+				ctx.AND_ASSIGN() != null ? ctx.AND_ASSIGN().getSymbol() :
+				ctx.OR_ASSIGN() != null ? ctx.OR_ASSIGN().getSymbol() :
+				ctx.XOR_ASSIGN() != null ? ctx.XOR_ASSIGN().getSymbol() :
+				ctx.MOD_ASSIGN() != null ? ctx.MOD_ASSIGN().getSymbol() :
+				ctx.LSHIFT_ASSIGN() != null ? ctx.LSHIFT_ASSIGN().getSymbol() :
+				ctx.RSHIFT_ASSIGN() != null ? ctx.RSHIFT_ASSIGN().getSymbol() :
+				ctx.URSHIFT_ASSIGN().getSymbol();
+					
+    		
+    		// add itself to the right side
+    		int num = (varCounts.get(var)-1);
+			if(ifChainsLastDefinedVars.size() > 0 && !ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).containsKey(var)) {
+				num = beforeIfChain.peek().get(var);
+			}
+    		String itself = var + "_" + num + ".value " + op.getText().replaceAll("=", "") + " ";
+    		Token start = ctx.expression().get(1).start;
+    		rewriter.insertBefore(start, itself);
+    		indexIncrease += itself.length();
+    		
+    		// replace operator
+    		rewriter.replace(op, "=");
+    		indexIncrease += "=".length() - op.getText().length();
+    		
+    		// declare this variable at the top
+    		nullDeclaration(var);
+    	}
+    	else if(ctx.INC() != null || ctx.DEC() != null) {
+    		Token t = ctx.start;
+    		String var = t.getText();
+    		varCounts.put(var, varCounts.get(var)+1);
+    		
+    		// get operator
+    		Token op = 	ctx.INC() != null ? ctx.INC().getSymbol() :
+    					ctx.DEC().getSymbol();
+    		
+    		// set the current assignee to this variable
+    		assignedVariableIndexed = false;
+    		currentAssignee = var;
+    		
+    		// replace operator
+    		rewriter.replace(op, "");
+    		indexIncrease += "".length() - op.getText().length();
+    		
+    		// add itself to the right side
+    		int num = (varCounts.get(var)-1);
+			if(ifChainsLastDefinedVars.size() > 0 && !ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).containsKey(var)) {
+				num = beforeIfChain.peek().get(var);
+			}
+    		String itself = " = new Var<" + varTypes.get(var) + ">(" + var + "_" + num + ".value " + op.getText().charAt(0) + " " + 1 + ")";
+    		rewriter.insertAfter(t, itself);
+    		indexIncrease += itself.length();
+    		
+    		// declare this variable at the top
+    		nullDeclaration(var);
+    		
+    		// add variable to if statement list of most recent variable definitions
+    		if(ifChainsLastDefinedVars.size() > 0) {
+    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+    		}
     	}
     	
     }
     
     @Override
     public void exitExpression(JavaParser.ExpressionContext ctx) {
-    	currentAssignee = "";
+    	if(ctx.ASSIGN() != null || ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
+    			ctx.AND_ASSIGN() != null || ctx.OR_ASSIGN() != null || ctx.XOR_ASSIGN() != null || ctx.MOD_ASSIGN() != null || 
+    			ctx.LSHIFT_ASSIGN() != null || ctx.RSHIFT_ASSIGN() != null || ctx.URSHIFT_ASSIGN() != null) {
+    		currentAssignee = "";
+    		
+    		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
+        	Token start = ctx.expression().get(1).start;
+        	Token end = ctx.expression().get(1).stop;
+        	newVariable(ctx.start.getText(), start, end);
+        	
+        	// add variable to if statement list of most recent variable definitions
+        	String var = ctx.start.getText();
+    		if(ifChainsLastDefinedVars.size() > 0) {
+    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+    		}
+    	}
+    	else if(ctx.INC() != null || ctx.DEC() != null) {
+    		currentAssignee = "";
+    	}
     }
     
     @Override 
@@ -547,6 +639,18 @@ public class GSAConverter extends JavaBaseListener {
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();
     		}
+    		else if(ifChainsLastDefinedVars.size() > 0 && assignedVariableIndexed) {
+				int num = (varCounts.get(ctx.getText()));
+				if(!ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).containsKey(ctx.getText())) {
+					num = beforeIfChain.peek().get(ctx.getText());
+				}
+				else if(currentAssignee.equals(ctx.getText())) {
+					num = (varCounts.get(ctx.getText())-1);
+				}
+    			String variable = "_" + num + ".value";
+    			rewriter.insertAfter(ctx.start, variable);
+        		indexIncrease += variable.length();
+    		}
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
@@ -568,6 +672,7 @@ public class GSAConverter extends JavaBaseListener {
 
     	}
     }
+    
     
     /* HELPERS */
     

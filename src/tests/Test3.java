@@ -12,6 +12,12 @@ public class Test3 {
 		x *= y * 400;
 		y /= 2;
 		y >>>= x;
+		
+		if(x > 4) {
+			x += 3;
+			y += y;
+			y--;
+		}
 		System.out.println(x + " " + y);
 	}
 }

@@ -10,22 +10,28 @@ public class Test2 {
 		Var<Integer> x_1 = null;
 		Var<String> y_2 = null;
 		Var<Integer> x_2 = null;
-		Var<Integer> x_3 = null;
 		Var<String> y_3 = null;
+		Var<Integer> x_3 = null;
+		Var<Integer> x_4 = null;
+		Var<String> y_4 = null;
 		
 		/* PROGRAM STARTS */
 		x_0 = new Var<Integer>(5);
 		y_0 = new Var<String>("hello");
 		if(y_0.value.equals(x_0.value)) {
-			y_1 = new Var<String>(y_1.value.substring(1));
-			x_1 = new Var<Integer>(x_1.value - 1);
+			y_1 = new Var<String>(y_0.value.substring(1));
+			x_1 = new Var<Integer>(x_0.value - 1);
+		}
+		else if(y_0.value.equals("whoa")) {
+			y_2 = new Var<String>(y_0.value.substring(1));
+			x_2 = new Var<Integer>(x_0.value - 3);
 		}
 		else {
-			y_2 = new Var<String>(y_2.value.substring(2));
-			x_2 = new Var<Integer>(x_2.value - 2);
+			y_3 = new Var<String>(y_0.value.substring(2));
+			x_3 = new Var<Integer>(x_0.value - 2);
 		}
-		x_3 = Phi.If((y_0.value.equals(x_0.value)),x_1,x_2);
-		y_3 = Phi.If((y_0.value.equals(x_0.value)),y_1,y_2);
-		System.out.println(y_3.value + " " + x_3.value);
+		x_4 = Phi.If((y_0.value.equals(x_0.value)),x_1,Phi.If((y_0.value.equals("whoa")),x_2,x_3));
+		y_4 = Phi.If((y_0.value.equals(x_0.value)),y_1,Phi.If((y_0.value.equals("whoa")),y_2,y_3));
+		System.out.println(y_4.value + " " + x_4.value);
 	}
 }

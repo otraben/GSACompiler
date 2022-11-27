@@ -9,6 +9,19 @@ public class Test5 {
 		if(x < 0) {
 			if(y < 10 && z > 1) {
 				x = 5;
+				if(y > 5) {
+					y = x + z;
+					z += 5;
+					y = y + z;
+					y = y + z;
+					x += 5;
+				}
+				else {
+					x *= z;
+				}
+			}
+			else if(y < 10) {
+				x--;
 			}
 		}
 		

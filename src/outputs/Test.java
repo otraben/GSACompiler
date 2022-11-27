@@ -30,7 +30,7 @@ public class Test {
         else {
         	x_3 = new Var<Integer>(5);
         }
-		x_4 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_1.value == 1),x_1,x_3));
+		x_4 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_1.value == 1),x_2,x_3));
 		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,Phi.If((x_1.value == 1),y_3,y_1));
         
         System.out.println(y_4.value);

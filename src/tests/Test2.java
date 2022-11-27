@@ -9,6 +9,10 @@ public class Test2 {
 			y = y.substring(1);
 			x = x - 1;
 		}
+		else if(y.equals("whoa")) {
+			y = y.substring(1);
+			x = x - 3;
+		}
 		else {
 			y = y.substring(2);
 			x = x - 2;

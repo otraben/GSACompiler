@@ -9,11 +9,6 @@ public class Test4 {
 			i = i + 1;
 			i = i + 1;
 			j = j + 1;
-			while(j < 10) {
-				i = j + 2;
-				j = j + 2;
-			}
-			i = i - 1;
 		}
 		System.out.println(i);
 	}

@@ -5,7 +5,7 @@ public class Test {
     public static void main(String[] args) {
         int x = 0;
         x = 5;
-        int y = 7;
+        int y = x - 12;
         y = 4;
         if((x == (2 * y))) {
         	y = 10;

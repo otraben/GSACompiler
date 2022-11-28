@@ -45,8 +45,10 @@ public class GSAConverter extends JavaBaseListener {
 	String currentAssignee = "";
 	
 	// conditions
-	boolean insideCondition = false;
-	int conditionDepth = 0;
+	boolean insideIfCondition = false;
+	int ifConditionDepth = 0;
+	boolean insideWhileCondition = false;
+	int whileConditionDepth = 0;
 	
 	// if statement variables
 	Stack<List<Pair<Token, Token>>> ifConditionIntervals; // stack for each if-chain - stack for each if block within the chain - and pair for each condition
@@ -57,7 +59,17 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<Integer> ifChainsLastDefinedVarsIndex;
 	Stack<JavaParser.StatementContext> finalIfBlocks;
 	Stack<HashMap<String, Integer>> beforeIfChain; 		// same as prevVarCounts, but specifically used for if statement conditions
-    
+	
+	// while statement variables
+	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
+	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
+	
+	// for loop variables
+	Stack<JavaParser.BlockContext> forLoopEndings;
+	boolean forLoopEntered = false;
+	JavaParser.ForInitContext forLoopInit = null;
+	boolean forUpdate = false;
+	
     public GSAConverter(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);
         
@@ -74,6 +86,11 @@ public class GSAConverter extends JavaBaseListener {
         ifChainsLastDefinedVarsIndex = new Stack<>();
         finalIfBlocks = new Stack<>();
         beforeIfChain = new Stack<>();
+        
+        firstVarFound = new Stack<>();
+        phiEntryVars = new Stack<>();	
+        
+        forLoopEndings = new Stack<>();
     }
     
     @Override
@@ -107,6 +124,10 @@ public class GSAConverter extends JavaBaseListener {
     		rewriter.insertAfter(currentFirstLine, comment);
     		indexIncrease += comment.length();
     	}
+    	else if(forLoopEntered) {
+    		forLoopEntered = false;
+    		forLoopEndings.push(ctx);
+    	}
     }
     
     @Override
@@ -127,7 +148,7 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void enterStatement(JavaParser.StatementContext ctx) {
     	if(ctx.IF() != null) {
-    		insideCondition = true;
+    		insideIfCondition = true;
     		
     		// get potential parent from if chain length
     		RuleContext parent = ctx.parent;
@@ -209,7 +230,31 @@ public class GSAConverter extends JavaBaseListener {
     		}
     	}
     	else if(ctx.WHILE() != null) {
-    		insideCondition = true;
+    		insideWhileCondition = true;
+    		
+    		// a new while statement has been found, so a stack element must be added for all while loop related stacks
+    		firstVarFound.push(new ArrayList<>());
+    		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
+    		
+    		// save the var counts prior to this loop
+    		HashMap<String,Integer> preVarCounts = new HashMap<>();
+        	preVarCounts.putAll(varCounts);
+        	prevVarCounts.push(preVarCounts);
+        	
+    	}
+    	else if(ctx.FOR() != null) {
+    		forLoopEntered = true;
+    		
+    		// since FOR loops are transformed into WHILE loops, do all of the steps for a WHILE loop
+    		
+    		// a new while statement has been found, so a stack element must be added for all while loop related stacks
+    		firstVarFound.push(new ArrayList<>());
+    		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
+    		
+    		// save the var counts prior to this loop
+    		HashMap<String,Integer> preVarCounts = new HashMap<>();
+        	preVarCounts.putAll(varCounts);
+        	prevVarCounts.push(preVarCounts);
     	}
     }
     
@@ -435,14 +480,120 @@ public class GSAConverter extends JavaBaseListener {
     			}
     		}
     		
+    	}
+    	else if(ctx.WHILE() != null) {
+    		
+    		// pop off all stack elements for this loop
+    		List<String> varsFound = firstVarFound.pop();
+    		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
+    		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
+    		
+    		// tab amount
+			String ws = "";
+			for(int i=0; i<tabAmount; i++) {
+				ws += '\t';
+			}
+			
+			// add the phi entry functions
+    		for(JavaParser.PrimaryContext t : tokens.keySet()) {
+    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
+    			rewriter.replace(t.start,t.stop,txt);
+    			indexIncrease += txt.length();
+    		}
+    		
+    		// add the phi exit functions
+    		for(String v : varCounts.keySet()) {
+    			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
+    				varCounts.put(v, varCounts.get(v) + 1);
+    				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
+    				rewriter.insertAfter(ctx.stop, exit);
+    				indexIncrease += exit.length();
+    				
+    				// define the variable at the top
+    				nullDeclaration(v);
+    			}
+    		}
+    		
+    	}
+    	else if(ctx.FOR() != null) {
+    		
+    		// tab amount
+			String ws = "";
+			for(int i=0; i<tabAmount; i++) {
+				ws += '\t';
+			}
+			
+			// WHILE loop stuff:
+    		// pop off all stack elements for this loop
+    		List<String> varsFound = firstVarFound.pop();
+    		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
+    		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
+			
+			// add the phi entry functions
+    		for(JavaParser.PrimaryContext t : tokens.keySet()) {
+    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
+    			rewriter.replace(t.start,t.stop,txt);
+    			indexIncrease += txt.length();
+    		}
+    		
+    		// add the phi exit functions
+    		for(String v : varCounts.keySet()) {
+    			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
+    				varCounts.put(v, varCounts.get(v) + 1);
+    				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
+    				rewriter.insertAfter(ctx.stop, exit);
+    				indexIncrease += exit.length();
+    				
+    				// define the variable at the top
+    				nullDeclaration(v);
+    			}
+    		}
+    		
+    		// move assignments to above the loop header
+    		String assignments = rewriter.getText(new Interval(ctx.forControl().forInit().start.getTokenIndex(), ctx.forControl().SEMI(0).getSymbol().getTokenIndex())) + "\n" + ws;
+    		rewriter.insertBefore(ctx.start, assignments);
+    		
+    		// add iterator to end of the loop
+    		// check whether or not this is the only time this var is being assigned a value
+    		String iteration = "\t" + rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()-1)) + ");\n" + ws;
+    		rewriter.insertBefore(ctx.stop, iteration);
+    		
+    		// FOR loops needs to be transformed into WHILE loops
+    		String condition = rewriter.getText(new Interval(ctx.forControl().expression().start.getTokenIndex(), ctx.forControl().expression().stop.getTokenIndex()));
+    		String whileLoop = "while(" + condition + ")";
+    		rewriter.replace(ctx.start, ctx.RPAREN().getSymbol(), whileLoop);
+    		
+    		
     		
     	}
     	
     }
     
+    @Override
+    public void enterForInit(JavaParser.ForInitContext ctx) {
+    	forLoopInit = ctx;
+    }
+    
+    @Override
+    public void exitForInit(JavaParser.ForInitContext ctx) {
+    	forLoopInit = null;
+    	insideWhileCondition = true;
+    }
+    
+    @Override
+    public void enterForUpdate(JavaParser.ForUpdateContext ctx) {
+    	insideWhileCondition = false;
+    	forUpdate = true;
+    }
+    
+    @Override
+    public void exitForUpdate(JavaParser.ForUpdateContext ctx) {
+    	forUpdate = false;
+    }
+     
     @Override 
     public void enterLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) { 
-    	
+
     	// first, obtain the type of the variable being declared
     	String type = ctx.typeSpec().getText();
     	String var = ctx.variableDeclarators().start.getText();
@@ -460,7 +611,7 @@ public class GSAConverter extends JavaBaseListener {
     	// create the variable object
     	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
     	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-    	newVariable(var, start, end);
+    	newVariable(var, start, end);	
     	
     }
     
@@ -469,6 +620,10 @@ public class GSAConverter extends JavaBaseListener {
     	
     	Token t = ctx.variableDeclaratorId().getStart();
     	String var = t.getText();
+    	
+    	// this variable has been assigned
+		assignedVariableIndexed = true;
+		
 		if(varCounts.containsKey(var)) {
 			varCounts.put(var, varCounts.get(var)+1);
 			String count = "_" + varCounts.get(var);
@@ -499,8 +654,6 @@ public class GSAConverter extends JavaBaseListener {
     		
     		// declare this variable at the top
     		nullDeclaration(var);
-
-        	
     	}
     	else if(ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
     			ctx.AND_ASSIGN() != null || ctx.OR_ASSIGN() != null || ctx.XOR_ASSIGN() != null || ctx.MOD_ASSIGN() != null || 
@@ -545,8 +698,10 @@ public class GSAConverter extends JavaBaseListener {
     		
     		// declare this variable at the top
     		nullDeclaration(var);
+
     	}
     	else if(ctx.INC() != null || ctx.DEC() != null) {
+    		
     		Token t = ctx.start;
     		String var = t.getText();
     		varCounts.put(var, varCounts.get(var)+1);
@@ -579,6 +734,12 @@ public class GSAConverter extends JavaBaseListener {
     		if(ifChainsLastDefinedVars.size() > 0) {
     			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
     		}
+    		
+    		// get the variable(s) being updated in a for loop
+    		if(forUpdate) {
+    			
+    		}
+   
     	}
     	
     }
@@ -608,22 +769,32 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override 
     public void enterParExpression(JavaParser.ParExpressionContext ctx) { 
-    	if(insideCondition) {
-    		conditionDepth += 1;
+    	if(insideIfCondition) {
+    		ifConditionDepth += 1;
     	}	
+    	else if(insideWhileCondition) {
+    		whileConditionDepth += 1;
+    	}
     }
     
     @Override 
     public void exitParExpression(JavaParser.ParExpressionContext ctx) { 
-    	if(insideCondition) {
-    		conditionDepth -= 1;
+    	if(insideIfCondition) {
+    		ifConditionDepth -= 1;
     		
-    		if(conditionDepth == 0) {
-    			insideCondition = false;
+    		if(ifConditionDepth == 0) {
+    			insideIfCondition = false;
     			
     			// add the condition's ending index to the list
     			Token start = ifConditionIntervals.peek().get(ifConditionIntervals.peek().size()-1).a;
     			ifConditionIntervals.peek().set(ifConditionIntervals.peek().size()-1, new Pair<Token,Token>(start, ctx.stop));
+    		}
+    	}	
+    	if(insideWhileCondition) {
+    		whileConditionDepth -= 1;
+    		
+    		if(whileConditionDepth == 0) {
+    			insideWhileCondition = false;
     		}
     	}	
     }
@@ -633,8 +804,28 @@ public class GSAConverter extends JavaBaseListener {
 
     	// variables that are just now being declared have already had their index added
     	if(varCounts.containsKey(ctx.getText())) {
+    		if(insideWhileCondition) {
+    			// we know this condition variable will need to be replaced with a phi entry function (this will be done later)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+    			
+    		}
+    		// inside a while loop AND left/right side variables are equivalent
+    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText()) && forLoopInit == null) {
+    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    			
+    			// add this var to the list
+    			firstVarFound.peek().add(ctx.getText());
+    		
+    		}
+    		// inside a while loop AND left/right side variables are NOT equivalent
+    		else if(assignedVariableIndexed && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText()) && forLoopInit == null) {
+    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    		
+    		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
-    		if(insideCondition) {
+    		else if(insideIfCondition) {
     			String variable = "_" + beforeIfChain.peek().get(ctx.getText()) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
         		indexIncrease += variable.length();

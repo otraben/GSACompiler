@@ -24,7 +24,6 @@ import antlr.JavaParser;
 public class GSAConverter extends JavaBaseListener {
 
     public TokenStreamRewriter rewriter;
-    String className = "";
     int indexIncrease = 0;
     int tabAmount = 1;
     
@@ -91,18 +90,6 @@ public class GSAConverter extends JavaBaseListener {
         phiEntryVars = new Stack<>();	
         
         forLoopEndings = new Stack<>();
-    }
-    
-    @Override
-    public void enterPackageDeclaration(JavaParser.PackageDeclarationContext ctx) {
-    	Token t = ctx.qualifiedName().start;
-    	rewriter.replace(t, "outputs");
-    	indexIncrease += "outputs".length() - ctx.qualifiedName().getText().length();
-    }
-    
-    @Override
-    public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
-    	className = ctx.Identifier().getText();
     }
     
     @Override

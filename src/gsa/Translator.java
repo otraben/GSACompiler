@@ -21,12 +21,16 @@ public class Translator {
     ParseTreeWalker walker;
     String parsedCode;
     String className;
+    String srcFolder;
 
-    public Translator(String code){
+    public Translator(String file){
 
+    	// save the path to the user's src folder
+    	srcFolder = file.substring(0, file.indexOf("tests"));
+    	
         CharStream inputStream = null;
         try {
-            inputStream = CharStreams.fromFileName(code);
+            inputStream = CharStreams.fromFileName(file);
         }
         catch(Exception e) {
             System.out.println(e);
@@ -41,12 +45,31 @@ public class Translator {
     void translate(){
         walker = new ParseTreeWalker();
         
-        //NewJavaListener listener = new NewJavaListener(tokens);
+        // pre-processing pass
+        PreProcessor preprocessor = new PreProcessor(tokens);	// object-oriented version
+        walker.walk((ParseTreeListener)preprocessor, parseTree);
+        parsedCode = preprocessor.rewriter.getText();
+        className = preprocessor.className;
+        saveFile();
+        
+        // re-populate the lexer and the parser using the new pre-processed file
+        CharStream inputStream = null;
+        try {
+        	inputStream = CharStreams.fromFileName(srcFolder + "outputs\\" + className + ".java");
+        }
+        catch(Exception e) {
+        	System.out.println(e);
+        }
+        JavaLexer lexer = new JavaLexer(inputStream);
+        tokens = new CommonTokenStream(lexer);
+        JavaParser parser = new JavaParser(tokens);
+        parseTree = parser.compilationUnit();
+        
+        // GSA pass
         GSAConverter listener = new GSAConverter(tokens);	// object-oriented version
         walker.walk((ParseTreeListener)listener, parseTree);
         parsedCode = listener.rewriter.getText();
         
-        className = listener.className;
         saveFile(); 
     }
     

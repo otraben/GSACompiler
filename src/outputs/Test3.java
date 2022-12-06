@@ -33,7 +33,7 @@ public class Test3 {
 		if(x_3.value > 4) {
 			x_4 = new Var<Integer>(x_3.value + 3);
 			y_5 = new Var<Integer>(y_4.value + y_4.value);
-			y_6 = new Var<Integer>(y_4.value - 1);
+			y_6 = new Var<Integer>(y_5.value - 1);
 		}
 		x_5 = Phi.If((x_3.value > 4),x_4,x_3);
 		y_7 = Phi.If((x_3.value > 4),y_6,y_4);

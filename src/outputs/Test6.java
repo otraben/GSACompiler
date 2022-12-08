@@ -12,9 +12,10 @@ public class Test6 {
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
 		Var<Integer> i_0 = null;
-		Var<Integer> i_1 = null;
 		Var<Integer> x_1 = null;
+		Var<Integer> i_1 = null;
 		Var<Integer> x_2 = null;
+		Var<Integer> i_2 = null;
 		
 		/* PROGRAM STARTS */
 		x_0 = new Var<Integer>(1);
@@ -24,6 +25,7 @@ public class Test6 {
 			i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
 		}
 		x_2 = Phi.Exit(x_0,x_1);
+		i_2 = Phi.Exit(i_0,i_1);
 		System.out.println(x_2.value);
 	}
 }

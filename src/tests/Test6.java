@@ -10,7 +10,7 @@ package tests;
 public class Test6 {
 	public static void main(String[] args) {
 		int x = 1;
-		for(int i = x - 12; i < 10; i = i + 1) {
+		for(int i = x - 12; i < 10; i++) {
 			x = x + 1;
 		}
 		System.out.println(x);

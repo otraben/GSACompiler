@@ -547,10 +547,18 @@ public class GSAConverter extends JavaBaseListener {
     	// declare the variable at the top of the file
 		nullDeclaration(var);
     	
-    	// create the variable object
-    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-    	newVariable(var, start, end);	
+    	// check to make sure this declaration is also an assign statement
+		if(ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer() != null) {
+			
+			// create the variable object
+	    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+	    	newVariable(var, start, end);	
+		}
+		// declaration with no assign can be erased
+		else {
+			rewriter.delete(ctx.start, ctx.stop);
+		}
     	
     }
     
@@ -565,15 +573,23 @@ public class GSAConverter extends JavaBaseListener {
 		
 		if(varCounts.containsKey(var)) {
 			varCounts.put(var, varCounts.get(var)+1);
-			String count = "_" + varCounts.get(var);
-			rewriter.insertAfter(t, count);
-			indexIncrease += count.length();
+			
+			// make sure this is an assignment declaration
+			if(ctx.variableInitializer() != null) {
+				String count = "_" + varCounts.get(var);
+				rewriter.insertAfter(t, count);
+				indexIncrease += count.length();
+			}
+			
 		}
 		else {
 			varCounts.put(var, 0);
-			String count = "_"+varCounts.get(var);
-			rewriter.insertAfter(t, count);
-			indexIncrease += count.length();
+			// make sure this is an assignment declaration
+			if(ctx.variableInitializer() != null) {
+				String count = "_"+varCounts.get(var);
+				rewriter.insertAfter(t, count);
+				indexIncrease += count.length();
+			}
 			
 		}
     }
@@ -585,7 +601,6 @@ public class GSAConverter extends JavaBaseListener {
     		
     		// first, increase the count for this variable
     		String var = ctx.start.getText();
-    		System.out.println(var + " " + varCounts.get(var));
     		varCounts.put(var, varCounts.get(var)+1);
     		
     		// set the current assignee to this variable

@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.JavaBaseListener;
 import antlr.JavaParser;
@@ -35,6 +36,22 @@ public class PreProcessor extends JavaBaseListener {
 		// save the class name for the translator
     	className = ctx.Identifier().getText();
     }
+	
+	@Override
+	public void enterFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
+		String type = ctx.typeSpec().getText();
+		
+		// tab amount
+		String ws = "";
+		for(int i=0; i<tabAmount+1; i++) {
+			ws += '\t';
+		}
+		
+		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
+			// create a new line for each variable declared in the same line
+			rewriter.replace(comma.getSymbol(), ";\n" + ws + type + " ");
+		}
+	}
 	
 	@Override
     public void enterBlock(JavaParser.BlockContext ctx) {
@@ -79,6 +96,22 @@ public class PreProcessor extends JavaBaseListener {
 	@Override
 	public void enterEnhancedForControl(JavaParser.EnhancedForControlContext ctx) {
 		foreachLoop = true;
+	}
+	
+	@Override
+	public void enterLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
+		String type = ctx.typeSpec().getText();
+		
+		// tab amount
+		String ws = "";
+		for(int i=0; i<tabAmount+1; i++) {
+			ws += '\t';
+		}
+		
+		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
+			// create a new line for each variable declared in the same line
+			rewriter.replace(comma.getSymbol(), ";\n" + ws + type + " ");
+		}
 	}
 	
 	@Override

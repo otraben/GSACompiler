@@ -3,11 +3,15 @@ package outputs;
 // tests basic SSA and a basic if/else statement
 public class Test {
     public static void main(String[] args) {
+		// formal parameters
+		Var<String[]> args_0 = new Var<String[]>(args);
+
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
 		Var<Integer> x_1 = null;
 		Var<Integer> y_0 = null;
 		Var<Integer> z_0 = null;
+		Var<Integer> w_0 = null;
 		Var<Integer> y_1 = null;
 		Var<Integer> y_2 = null;
 		Var<Integer> x_2 = null;
@@ -25,6 +29,7 @@ public class Test {
         x_1 = new Var<Integer>(5);
         y_0 = new Var<Integer>(x_1.value - 12);
         ;
+		;
         y_1 = new Var<Integer>(4);
         if((x_1.value == (2 * y_1.value))) {
         	y_2 = new Var<Integer>(10);

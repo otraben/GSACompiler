@@ -3,6 +3,9 @@ package outputs;
 // tests while loops
 public class Test4 {
 	public static void main(String[] args) {
+		// formal parameters
+		Var<String[]> args_0 = new Var<String[]>(args);
+
 		// all variables are declared to null
 		Var<Integer> i_0 = null;
 		Var<Integer> j_0 = null;

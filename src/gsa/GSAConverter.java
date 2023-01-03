@@ -31,10 +31,14 @@ public class GSAConverter extends JavaBaseListener {
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
 	public Map<String, String> varTypes;	// keeps track of the type of each variable
 	
+	// class-specific variables
+	Token classFirstLine;
+	
 	// method-specific variables
 	boolean methodFirstLineFound = false;
 	Token currentFirstLine;
 	boolean afterVarDefs = false;
+	HashMap<String,String> formalParams;
 	
 	// block-specific variables
 	Stack<HashMap<String, Integer>> prevVarCounts;
@@ -85,9 +89,56 @@ public class GSAConverter extends JavaBaseListener {
     }
     
     @Override
+    public void enterClassBody(JavaParser.ClassBodyContext ctx) {
+		classFirstLine = ctx.LBRACE().getSymbol();
+    }
+    
+    @Override
+    public void enterFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
+    	
+    }
+    
+    @Override
+    public void exitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
+    	String var = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText();
+    	varTypes.put(var, getType(ctx.typeSpec().getText()));
+    	
+    	// replace the type with the "Var<>" version
+    	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
+    	
+    	// check if this is NOT an assignment statement
+    	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
+    		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
+    	}
+    	// if it is an assignment statement
+    	else {
+    		// right-side needs to be reformatted
+    		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+	    	newVariable(var, start, end);
+    		
+    	}
+    }
+    
+    @Override
+    public void enterFormalParameters(JavaParser.FormalParametersContext ctx) {
+    	formalParams = new HashMap<>();
+    }
+    
+    @Override
+    public void enterFormalParameter(JavaParser.FormalParameterContext ctx) {
+    	formalParams.put(ctx.variableDeclaratorId().getText(), ctx.typeSpec().getText());
+    }
+    
+    @Override
     public void enterMethodBody(JavaParser.MethodBodyContext ctx) {
     	methodFirstLineFound = false;
     	afterVarDefs = false;
+    }
+    
+    @Override
+    public void exitMethodBody(JavaParser.MethodBodyContext ctx) {
+    	currentFirstLine = null;
     }
     
     @Override
@@ -98,10 +149,28 @@ public class GSAConverter extends JavaBaseListener {
     		currentFirstLine = ctx.LBRACE().getSymbol();
     		methodFirstLineFound = true;
     		
+    		// declare the formal parameters as our Var type
+    		String comment2 = "\n\t\t// formal parameters";
+    		rewriter.insertAfter(currentFirstLine, comment2);
+    		indexIncrease += comment2.length();
+    		for(String key : formalParams.keySet()) {
+    			if(varCounts.containsKey(key)) {
+    				varCounts.put(key, varCounts.get(key) + 1);
+    			}
+    			else {
+    				varCounts.put(key, 0);
+    				varTypes.put(key, getType(formalParams.get(key)));
+    			}
+    			String decl = "\n\t\tVar<" + varTypes.get(key) + "> " + key + "_" + varCounts.get(key) + " = new Var<" + varTypes.get(key) + ">(" + key + ");";
+    			rewriter.insertAfter(currentFirstLine, decl);
+        		indexIncrease += decl.length();
+    		}
+    		
     		// add a comment
-    		String comment = "\n\t\t// all variables are declared to null";
+    		String comment = "\n\n\t\t// all variables are declared to null";
     		rewriter.insertAfter(currentFirstLine, comment);
     		indexIncrease += comment.length();
+    		
     	}
     }
     
@@ -544,9 +613,13 @@ public class GSAConverter extends JavaBaseListener {
     	rewriter.delete(startIndex,endIndex);
     	indexIncrease -= (endIndex - startIndex);
     	
-    	// declare the variable at the top of the file
-		nullDeclaration(var);
     	
+    	
+    }
+    
+    @Override 
+    public void exitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) { 
+    	String var = ctx.variableDeclarators().start.getText();
     	// check to make sure this declaration is also an assign statement
 		if(ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer() != null) {
 			
@@ -559,7 +632,6 @@ public class GSAConverter extends JavaBaseListener {
 		else {
 			rewriter.delete(ctx.start, ctx.stop);
 		}
-    	
     }
     
     @Override 
@@ -592,6 +664,12 @@ public class GSAConverter extends JavaBaseListener {
 			}
 			
 		}
+		
+		if(currentFirstLine != null) {
+			// declare the variable at the top of the file
+			nullDeclaration(var);
+		}
+		
     }
     
     @Override

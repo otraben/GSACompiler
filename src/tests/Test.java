@@ -6,7 +6,7 @@ public class Test {
         int x = 0;
         x = 5;
         int y = x - 12;
-        int z;
+        int z, w;
         y = 4;
         if((x == (2 * y))) {
         	y = 10;

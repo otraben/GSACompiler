@@ -2,7 +2,11 @@ package outputs;
 
 // tests different declaration types, and an if statement with no else
 public class Test1 {
+	// all global variables are declared to null
 	public static void main(String[] args) {
+		// formal parameters
+		Var<String[]> args_0 = new Var<String[]>(args);
+
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
 		Var<String> y_0 = null;

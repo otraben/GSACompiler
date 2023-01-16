@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.JavaBaseListener;
 import antlr.JavaParser;
+import antlr.JavaParser.ExpressionContext;
 
 public class PreProcessor extends JavaBaseListener {
 	public TokenStreamRewriter rewriter;
@@ -73,15 +74,65 @@ public class PreProcessor extends JavaBaseListener {
 			}
 			
 			// move assignments to above the loop header
-			String assignments = rewriter.getText(new Interval(ctx.forControl().forInit().start.getTokenIndex(), ctx.forControl().SEMI(0).getSymbol().getTokenIndex())) + "\n" + ws;
-			rewriter.insertBefore(ctx.start, assignments);
+			if(ctx.forControl().forInit() != null) {
+				String assignments = rewriter.getText(new Interval(ctx.forControl().forInit().start.getTokenIndex(), ctx.forControl().SEMI(0).getSymbol().getTokenIndex())) + "\n" + ws;
+				rewriter.insertBefore(ctx.start, assignments);
+			}
 			
-			// add iterator to end of the loop
+			
+			// add iterator(s) to end of the loop
     		// check whether or not this is the only time this var is being assigned a value
-			String iteratorOnly = rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()));
-    		String iteration = "\t" + iteratorOnly.substring(0,iteratorOnly.length()-1) + ";\n" + ws;
-    		rewriter.insertBefore(ctx.stop, iteration);
-    		
+			for(int i = ctx.forControl().forUpdate().expressionList().getChildCount()-2; i >= 0; i--) {
+//				String iteratorOnly = rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()));
+//	    		String iteration = "\t" + iteratorOnly.substring(0,iteratorOnly.length()-1) + ";\n" + ws;
+				ExpressionContext exp = ctx.forControl().forUpdate().expressionList().expression(i);
+				
+				// have to translate the expression to a regular assign expression
+				String expText = "";
+				if(exp.ADD_ASSIGN() != null || exp.SUB_ASSIGN() != null || exp.MUL_ASSIGN() != null || exp.DIV_ASSIGN() != null || 
+						exp.AND_ASSIGN() != null || exp.OR_ASSIGN() != null || exp.XOR_ASSIGN() != null || exp.MOD_ASSIGN() != null || 
+								exp.LSHIFT_ASSIGN() != null || exp.RSHIFT_ASSIGN() != null || exp.URSHIFT_ASSIGN() != null) {
+						
+						// get operator
+			    		Token op = 	exp.ADD_ASSIGN() != null ? exp.ADD_ASSIGN().getSymbol() : 
+			    			exp.SUB_ASSIGN() != null ? exp.SUB_ASSIGN().getSymbol() :
+			    			exp.MUL_ASSIGN() != null ? exp.MUL_ASSIGN().getSymbol() :
+			    			exp.DIV_ASSIGN() != null ? exp.DIV_ASSIGN().getSymbol() :
+			    			exp.AND_ASSIGN() != null ? exp.AND_ASSIGN().getSymbol() :
+			    			exp.OR_ASSIGN() != null ? exp.OR_ASSIGN().getSymbol() :
+			    			exp.XOR_ASSIGN() != null ? exp.XOR_ASSIGN().getSymbol() :
+			    			exp.MOD_ASSIGN() != null ? exp.MOD_ASSIGN().getSymbol() :
+			    			exp.LSHIFT_ASSIGN() != null ? exp.LSHIFT_ASSIGN().getSymbol() :
+			    			exp.RSHIFT_ASSIGN() != null ? exp.RSHIFT_ASSIGN().getSymbol() :
+			    			exp.URSHIFT_ASSIGN().getSymbol();
+			    		
+			    		// get variable
+			    		String var = exp.start.getText();
+			    		
+			    		// transform it into a regular ASSIGN expression
+			    		expText = exp.getText();
+			    		expText = expText.substring(0,expText.indexOf(op.getText())) + " = " + var + " " + op.getText().replaceAll("=", "") + " " + expText.substring(expText.indexOf(op.getText())+ op.getText().length());
+						
+					}
+					// transform decrement and increment statements into ASSIGN statements
+					else if(exp.INC() != null || exp.DEC() != null) {
+						
+						// get operator
+			    		Token op = 	exp.INC() != null ? exp.INC().getSymbol() :
+			    			exp.DEC().getSymbol();
+			    		
+			    		// get variable
+			    		String var = exp.start.getText();
+			    		
+			    		// transform it into a regular ASSIGN expression
+			    		expText = exp.getText();
+			    		expText = expText.substring(0,expText.indexOf(op.getText())) + " = " + var + " " + op.getText().substring(1) + " 1";
+					}
+				
+				String iteration = "\t" + expText + ";\n" + ws;
+	    		rewriter.insertBefore(ctx.stop, iteration);
+			}
+			
     		// FOR loops needs to be transformed into WHILE loops
     		String condition = rewriter.getText(new Interval(ctx.forControl().expression().start.getTokenIndex(), ctx.forControl().expression().stop.getTokenIndex()));
     		String whileLoop = "while(" + condition + ")";

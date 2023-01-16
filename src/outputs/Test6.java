@@ -15,20 +15,26 @@ public class Test6 {
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
 		Var<Integer> i_0 = null;
+		Var<Integer> j_0 = null;
 		Var<Integer> x_1 = null;
 		Var<Integer> i_1 = null;
+		Var<Integer> j_1 = null;
 		Var<Integer> x_2 = null;
 		Var<Integer> i_2 = null;
+		Var<Integer> j_2 = null;
 		
 		/* PROGRAM STARTS */
 		x_0 = new Var<Integer>(1);
 		i_0 = new Var<Integer>(x_0.value - 12);
+		j_0 = new Var<Integer>(2 - x_0.value);
 		while(Phi.Entry(i_0,i_1).value < 10) {
 			x_1 = new Var<Integer>(Phi.Entry(x_0,x_1).value + 1);
 			i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
+			j_1 = new Var<Integer>(Phi.Entry(j_0,j_1).value - i_1.value);
 		}
 		x_2 = Phi.Exit(x_0,x_1);
 		i_2 = Phi.Exit(i_0,i_1);
+		j_2 = Phi.Exit(j_0,j_1);
 		System.out.println(x_2.value);
 	}
 }

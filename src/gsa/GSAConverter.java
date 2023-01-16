@@ -679,7 +679,13 @@ public class GSAConverter extends JavaBaseListener {
     		
     		// first, increase the count for this variable
     		String var = ctx.start.getText();
-    		varCounts.put(var, varCounts.get(var)+1);
+    		if(varCounts.get(var) != null) {
+    			varCounts.put(var, varCounts.get(var)+1);
+    		}
+    		else {
+    			varCounts.put(var,0);
+    		}
+    		
     		
     		// set the current assignee to this variable
     		assignedVariableIndexed = false;
@@ -818,6 +824,8 @@ public class GSAConverter extends JavaBaseListener {
     			return "Character";
     		case "boolean":
     			return "Boolean";
+    		case "double":
+    			return "Double";
     		default:
     			return t;
     	}

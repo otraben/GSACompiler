@@ -8,7 +8,9 @@ public class Test7 {
 	public static int min(int a, int b) {
 		// formal parameters
 		Var<Integer> a_0 = new Var<Integer>(a);
+		Output.record("Test7", "min", 7, "a", a);
 		Var<Integer> b_0 = new Var<Integer>(b);
+		Output.record("Test7", "min", 7, "b", b);
 
 		// all variables are declared to null
 		Var<Integer> var1_0 = null;
@@ -32,6 +34,7 @@ public class Test7 {
 	public static void main(String[] args) {
 		// formal parameters
 		Var<String[]> args_0 = new Var<String[]>(args);
+		Output.record("Test7", "main", 20, "args", args);
 
 		// all variables are declared to null
 		Var<Integer> x_1 = null;

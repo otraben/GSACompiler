@@ -10,6 +10,7 @@ package outputs;
 public class Test6 {
 	public static void main(String[] args) {
 		// formal parameters
+		Output.record("Test6", "main", 0, "args", args);
 		Var<String[]> args_0 = new Var<String[]>(args);
 
 		// all variables are declared to null

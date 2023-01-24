@@ -20,6 +20,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.JavaBaseListener;
 import antlr.JavaParser;
+import outputs.Output;
 
 public class GSAConverter extends JavaBaseListener {
 
@@ -33,12 +34,14 @@ public class GSAConverter extends JavaBaseListener {
 	
 	// class-specific variables
 	Token classFirstLine;
+	String className;
 	
 	// method-specific variables
 	boolean methodFirstLineFound = false;
 	Token currentFirstLine;
 	boolean afterVarDefs = false;
 	HashMap<String,String> formalParams;
+	String currentMethod = "";
 	
 	// block-specific variables
 	Stack<HashMap<String, Integer>> prevVarCounts;
@@ -89,13 +92,13 @@ public class GSAConverter extends JavaBaseListener {
     }
     
     @Override
-    public void enterClassBody(JavaParser.ClassBodyContext ctx) {
-		classFirstLine = ctx.LBRACE().getSymbol();
+    public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
+    	className = ctx.Identifier().getText();
     }
     
     @Override
-    public void enterFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
-    	
+    public void enterClassBody(JavaParser.ClassBodyContext ctx) {
+		classFirstLine = ctx.LBRACE().getSymbol();
     }
     
     @Override
@@ -118,6 +121,16 @@ public class GSAConverter extends JavaBaseListener {
 	    	newVariable(var, start, end);
     		
     	}
+    }
+    
+    @Override
+    public void enterMethodDeclaration(JavaParser.MethodDeclarationContext ctx)  {
+    	currentMethod = ctx.Identifier().getText();
+    }
+    
+    @Override
+    public void exitMethodDeclaration(JavaParser.MethodDeclarationContext ctx)  {
+    	currentMethod = "";
     }
     
     @Override
@@ -161,9 +174,16 @@ public class GSAConverter extends JavaBaseListener {
     				varCounts.put(key, 0);
     				varTypes.put(key, getType(formalParams.get(key)));
     			}
+    			
+        		// add the actual declaration
     			String decl = "\n\t\tVar<" + varTypes.get(key) + "> " + key + "_" + varCounts.get(key) + " = new Var<" + varTypes.get(key) + ">(" + key + ");";
     			rewriter.insertAfter(currentFirstLine, decl);
         		indexIncrease += decl.length();
+        		
+        		// add the record statement
+        		rewriter.insertAfter(currentFirstLine, "\n\t\t" + createRecordStatement(className, currentMethod, ctx.getStart().getLine()-1, key + "_" + varCounts.get(key)) + ";");
+        		
+        		
     		}
     		
     		// add a comment
@@ -398,6 +418,9 @@ public class GSAConverter extends JavaBaseListener {
     	    					indexIncrease += phi_if.length();
         					}
         					
+        					// add the record statement
+        					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
+        					
             			}
         			}
             	}
@@ -506,6 +529,9 @@ public class GSAConverter extends JavaBaseListener {
 	    					indexIncrease += phi_if.length();
     					}
     					
+    					// add the record statement
+    					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
+    					
         			}
     			}
     		}
@@ -541,6 +567,9 @@ public class GSAConverter extends JavaBaseListener {
     				
     				// define the variable at the top
     				nullDeclaration(v);
+    				
+    				// add the record statement
+    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
     			}
     		}
     		
@@ -576,6 +605,9 @@ public class GSAConverter extends JavaBaseListener {
     				
     				// define the variable at the top
     				nullDeclaration(v);
+    				
+    				// add the record statement
+    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v)) + ";");
     			}
     		}
     		
@@ -620,6 +652,13 @@ public class GSAConverter extends JavaBaseListener {
     @Override 
     public void exitLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) { 
     	String var = ctx.variableDeclarators().start.getText();
+    	
+    	// tab amount
+		String ws = "";
+		for(int i=0; i<tabAmount; i++) {
+			ws += '\t';
+		}
+    			
     	// check to make sure this declaration is also an assign statement
 		if(ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer() != null) {
 			
@@ -627,9 +666,20 @@ public class GSAConverter extends JavaBaseListener {
 	    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
 	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
 	    	newVariable(var, start, end);	
+	    	
+	    	// add the record statement
+	    	String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+			rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0, record.length()));
 		}
 		// declaration with no assign can be erased
 		else {
+			rewriter.insertBefore(ctx.start, "//");
+			
+			// add the record statement
+//			String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+//			rewriter.insertAfter(ctx.stop, "\n" + ws + record.substring(0, record.length()));
+			
+			// erase
 			rewriter.delete(ctx.start, ctx.stop);
 		}
     }
@@ -664,13 +714,14 @@ public class GSAConverter extends JavaBaseListener {
 			}
 			
 		}
-		
+			
 		if(currentFirstLine != null) {
 			// declare the variable at the top of the file
 			nullDeclaration(var);
 		}
 		
     }
+    	
     
     @Override
     public void enterExpression(JavaParser.ExpressionContext ctx) {
@@ -685,7 +736,6 @@ public class GSAConverter extends JavaBaseListener {
     		else {
     			varCounts.put(var,0);
     		}
-    		
     		
     		// set the current assignee to this variable
     		assignedVariableIndexed = false;
@@ -707,8 +757,19 @@ public class GSAConverter extends JavaBaseListener {
         	Token end = ctx.expression().get(1).stop;
         	newVariable(ctx.start.getText(), start, end);
         	
-        	// add variable to if statement list of most recent variable definitions
         	String var = ctx.start.getText();
+        	
+        	// tab amount
+    		String ws = "";
+    		for(int i=0; i<tabAmount; i++) {
+    			ws += '\t';
+    		}
+    		
+        	// add the record statement
+    		String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+        	rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0,record.length()));
+        	
+        	// add variable to if statement list of most recent variable definitions
     		if(ifChainsLastDefinedVars.size() > 0) {
     			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
     		}
@@ -852,6 +913,11 @@ public class GSAConverter extends JavaBaseListener {
 		}
     	rewriter.insertAfter(currentFirstLine, decl);
     	indexIncrease += decl.length();
+    }
+    
+    // returns a string of a record statement for the given inputs
+    public String createRecordStatement(String className, String methodName, int lineNumber, String var) {
+    	return "Output.record(\"" + className + "\", \"" + currentMethod + "\", " + lineNumber + ", \"" + var + "\", " + var + ".value)";
     }
     
 }

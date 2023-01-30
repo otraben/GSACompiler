@@ -27,6 +27,7 @@ public class GSAConverter extends JavaBaseListener {
     public TokenStreamRewriter rewriter;
     int indexIncrease = 0;
     int tabAmount = 1;
+    List<Integer> extraLines;
     
     // variable-specific variables
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
@@ -70,8 +71,9 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
 	
-    public GSAConverter(CommonTokenStream tokens) {
+    public GSAConverter(CommonTokenStream tokens, List<Integer> addedLines) {
         rewriter = new TokenStreamRewriter(tokens);
+        extraLines = addedLines;
         
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
@@ -104,7 +106,26 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void exitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
     	String var = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText();
-    	varTypes.put(var, getType(ctx.typeSpec().getText()));
+    	
+    	// check if this is an array
+    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null) {
+    		
+    		// get bracket count
+			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
+			String brackets = "";
+			for(int i=0; i<bracketCount; i++) {
+				brackets += "[]";
+			}
+    		
+    		// delete brackets
+    		rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
+    		
+    		// add array type
+    		varTypes.put(var, getType(ctx.typeSpec().getText() + brackets));
+    	}
+    	else {
+    		varTypes.put(var, getType(ctx.typeSpec().getText()));
+    	}
     	
     	// replace the type with the "Var<>" version
     	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
@@ -120,6 +141,16 @@ public class GSAConverter extends JavaBaseListener {
 	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
 	    	newVariable(var, start, end);
     		
+    	}
+    	
+    }
+    
+    @Override
+    public void exitTypeSpec(JavaParser.TypeSpecContext ctx) {
+    	// array
+    	if(currentMethod.equals("") && ctx.LBRACK(0) != null) {
+    		// remove all brackets
+    		rewriter.replace(ctx.LBRACK(0).getSymbol(), ctx.RBRACK(ctx.RBRACK().size()-1).getSymbol(), "");
     	}
     }
     
@@ -141,6 +172,9 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void enterFormalParameter(JavaParser.FormalParameterContext ctx) {
     	formalParams.put(ctx.variableDeclaratorId().getText(), ctx.typeSpec().getText());
+    	
+    	// change type
+    	rewriter.replace(ctx.typeSpec().start, ctx.typeSpec().stop, getType(ctx.typeSpec().getText()));
     }
     
     @Override
@@ -181,7 +215,13 @@ public class GSAConverter extends JavaBaseListener {
         		indexIncrease += decl.length();
         		
         		// add the record statement
-        		rewriter.insertAfter(currentFirstLine, "\n\t\t" + createRecordStatement(className, currentMethod, ctx.getStart().getLine()-1, key + "_" + varCounts.get(key)) + ";");
+        		int lineNum = ctx.getStart().getLine();
+        		for(Integer n : extraLines) {
+        			if(n < ctx.getStart().getLine()) {
+        				lineNum--;
+        			}
+        		}
+        		rewriter.insertAfter(currentFirstLine, "\n\t\t" + createRecordStatement(className, currentMethod, lineNum, key + "_" + varCounts.get(key)) + ";");
         		
         		
     		}
@@ -419,7 +459,13 @@ public class GSAConverter extends JavaBaseListener {
         					}
         					
         					// add the record statement
-        					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
+        	        		int lineNum = ctx.getStart().getLine();
+        	        		for(Integer n : extraLines) {
+        	        			if(n < ctx.getStart().getLine()) {
+        	        				lineNum--;
+        	        			}
+        	        		}
+        					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v))+ ";");
         					
             			}
         			}
@@ -530,7 +576,13 @@ public class GSAConverter extends JavaBaseListener {
     					}
     					
     					// add the record statement
-    					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
+    	        		int lineNum = ctx.getStart().getLine();
+    	        		for(Integer n : extraLines) {
+    	        			if(n < ctx.getStart().getLine()) {
+    	        				lineNum--;
+    	        			}
+    	        		}
+    					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v))+ ";");
     					
         			}
     			}
@@ -569,7 +621,13 @@ public class GSAConverter extends JavaBaseListener {
     				nullDeclaration(v);
     				
     				// add the record statement
-    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v))+ ";");
+            		int lineNum = ctx.getStart().getLine();
+            		for(Integer n : extraLines) {
+            			if(n < ctx.getStart().getLine()) {
+            				lineNum--;
+            			}
+            		}
+    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v))+ ";");
     			}
     		}
     		
@@ -607,7 +665,13 @@ public class GSAConverter extends JavaBaseListener {
     				nullDeclaration(v);
     				
     				// add the record statement
-    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, ctx.getStart().getLine(), v + "_" + varCounts.get(v)) + ";");
+            		int lineNum = ctx.getStart().getLine();
+            		for(Integer n : extraLines) {
+            			if(n < ctx.getStart().getLine()) {
+            				lineNum--;
+            			}
+            		}
+    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v)) + ";");
     			}
     		}
     		
@@ -637,7 +701,25 @@ public class GSAConverter extends JavaBaseListener {
     	// first, obtain the type of the variable being declared
     	String type = ctx.typeSpec().getText();
     	String var = ctx.variableDeclarators().start.getText();
-    	varTypes.put(var, getType(type));
+    	
+    	// check if it is an array
+    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null) {
+    		// get bracket count
+			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
+			String brackets = "";
+			for(int i=0; i<bracketCount; i++) {
+				brackets += "[]";
+			}
+			
+			// delete brackets
+			rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
+			
+			varTypes.put(var, getType(type) + brackets);
+    	}
+    	else {
+    		varTypes.put(var, getType(type));
+    	}
+    	
     	
     	// next, erase the type AND the space
     	int startIndex = ctx.typeSpec().start.getTokenIndex();
@@ -668,14 +750,20 @@ public class GSAConverter extends JavaBaseListener {
 	    	newVariable(var, start, end);	
 	    	
 	    	// add the record statement
-	    	String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+    		int lineNum = ctx.getStart().getLine();
+    		for(Integer n : extraLines) {
+    			if(n < ctx.getStart().getLine()) {
+    				lineNum--;
+    			}
+    		}
+	    	String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
 			rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0, record.length()));
 		}
 		// declaration with no assign can be erased
 		else {
 			rewriter.insertBefore(ctx.start, "//");
 			
-			// add the record statement
+			// no record statement for no value?
 //			String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
 //			rewriter.insertAfter(ctx.stop, "\n" + ws + record.substring(0, record.length()));
 			
@@ -765,8 +853,14 @@ public class GSAConverter extends JavaBaseListener {
     			ws += '\t';
     		}
     		
-        	// add the record statement
-    		String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+    		// add the record statement
+    		int lineNum = ctx.getStart().getLine();
+    		for(Integer n : extraLines) {
+    			if(n < ctx.getStart().getLine()) {
+    				lineNum--;
+    			}
+    		}
+    		String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
         	rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0,record.length()));
         	
         	// add variable to if statement list of most recent variable definitions
@@ -873,22 +967,36 @@ public class GSAConverter extends JavaBaseListener {
     	}
     }
     
+    // ARRAYS
+    @Override
+    public void enterCreatedName(JavaParser.CreatedNameContext ctx) {
+    	rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
+    }
     
     /* HELPERS */
     
     // always returns a non-primitive type
     public String getType(String t) {
+    	
+    	String brackets = "";
+    	while(t.contains("[]")) {
+    		brackets += "[]";
+    		t = t.substring(0,t.lastIndexOf("[]"));
+    	}
+    	
     	switch(t) {
     		case "int":
-    			return "Integer";
+    			return "Integer" + brackets;
     		case "char":
-    			return "Character";
+    			return "Character" + brackets;
     		case "boolean":
-    			return "Boolean";
+    			return "Boolean" + brackets;
     		case "double":
-    			return "Double";
+    			return "Double" + brackets;
+    		case "float":
+    			return "Float" + brackets;
     		default:
-    			return t;
+    			return t + brackets;
     	}
     }
     

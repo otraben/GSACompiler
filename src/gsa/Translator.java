@@ -52,6 +52,8 @@ public class Translator {
         className = preprocessor.className;
         saveFile();
         
+        List<Integer> addedLines = preprocessor.getAddedLines();
+        
         // re-populate the lexer and the parser using the new pre-processed file
         CharStream inputStream = null;
         try {
@@ -66,7 +68,7 @@ public class Translator {
         parseTree = parser.compilationUnit();
         
         // GSA pass
-        GSAConverter listener = new GSAConverter(tokens);	// object-oriented version
+        GSAConverter listener = new GSAConverter(tokens, addedLines);	// object-oriented version
         walker.walk((ParseTreeListener)listener, parseTree);
         parsedCode = listener.rewriter.getText();
         

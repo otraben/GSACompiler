@@ -1,6 +1,8 @@
 package gsa;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Stack;
 
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -18,12 +20,19 @@ public class PreProcessor extends JavaBaseListener {
 	public String className;
 	int tabAmount = 0;
 	
+	List<Integer> lineIncreases = new ArrayList<>();
+	int extraLines = 0;
+	
 	// foreach loops
 	boolean foreachLoop = false;
 	
 	public PreProcessor(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);   
     }
+	
+	public List<Integer> getAddedLines() {
+		return lineIncreases;
+	}
 	
 	@Override
     public void enterPackageDeclaration(JavaParser.PackageDeclarationContext ctx) {
@@ -51,6 +60,28 @@ public class PreProcessor extends JavaBaseListener {
 		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
 			// create a new line for each variable declared in the same line
 			rewriter.replace(comma.getSymbol(), ";\n" + ws + type + " ");
+			lineIncreases.add(ctx.getStart().getLine() + extraLines);
+			extraLines++;
+		}
+	}
+	
+	@Override
+	public void enterFormalParameter(JavaParser.FormalParameterContext ctx) {
+		// check for an array declared with the brackets next to the variable name
+		if(ctx.variableDeclaratorId().LBRACK(0) != null) {
+			
+			// get bracket count
+			int bracketCount = ctx.variableDeclaratorId().LBRACK().size();
+			String brackets = "";
+			for(int i=0; i<bracketCount; i++) {
+				brackets += "[]";
+			}
+			
+			// delete brackets
+			rewriter.replace(ctx.variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclaratorId().RBRACK(ctx.variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
+			
+			// add brackets to type
+			rewriter.insertAfter(ctx.typeSpec().stop, brackets);
 		}
 	}
 	
@@ -77,6 +108,8 @@ public class PreProcessor extends JavaBaseListener {
 			if(ctx.forControl().forInit() != null) {
 				String assignments = rewriter.getText(new Interval(ctx.forControl().forInit().start.getTokenIndex(), ctx.forControl().SEMI(0).getSymbol().getTokenIndex())) + "\n" + ws;
 				rewriter.insertBefore(ctx.start, assignments);
+				lineIncreases.add(ctx.getStart().getLine()- 1 + extraLines);
+				extraLines++;
 			}
 			
 			
@@ -131,6 +164,8 @@ public class PreProcessor extends JavaBaseListener {
 				
 				String iteration = "\t" + expText + ";\n" + ws;
 	    		rewriter.insertBefore(ctx.stop, iteration);
+	    		lineIncreases.add(ctx.getStop().getLine() - 1 + extraLines);
+	    		extraLines++;
 			}
 			
     		// FOR loops needs to be transformed into WHILE loops
@@ -162,6 +197,8 @@ public class PreProcessor extends JavaBaseListener {
 		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
 			// create a new line for each variable declared in the same line
 			rewriter.replace(comma.getSymbol(), ";\n" + ws + type + " ");
+			lineIncreases.add(ctx.getStart().getLine() + extraLines);
+			extraLines++;
 		}
 	}
 	

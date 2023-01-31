@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import antlr.JavaBaseListener;
 import antlr.JavaParser;
 import antlr.JavaParser.ExpressionContext;
+import antlr.JavaParser.StatementContext;
 
 public class PreProcessor extends JavaBaseListener {
 	public TokenStreamRewriter rewriter;
@@ -97,12 +98,24 @@ public class PreProcessor extends JavaBaseListener {
 	
 	@Override
 	public void exitStatement(JavaParser.StatementContext ctx) {
-		if(ctx.FOR() != null && !foreachLoop) {
-			// tab amount
-			String ws = "";
-			for(int i=0; i<tabAmount+1; i++) {
-				ws += '\t';
+		
+		// tab amount
+		String ws = "";
+		for(int i=0; i<tabAmount+1; i++) {
+			ws += '\t';
+		}
+		
+		// make sure braces are present in all cases
+		for(StatementContext s : ctx.statement()) {
+			if(s.block() == null) {
+				rewriter.insertBefore(s.start, "{\n\t" + ws);
+				lineIncreases.add(s.start.getLine() + extraLines);
+				rewriter.insertAfter(s.stop, "\n" + ws + "}");
+				lineIncreases.add(s.stop.getLine() + extraLines);
 			}
+		}
+		
+		if(ctx.FOR() != null && !foreachLoop) {
 			
 			// move assignments to above the loop header
 			if(ctx.forControl().forInit() != null) {
@@ -113,9 +126,15 @@ public class PreProcessor extends JavaBaseListener {
 			}
 			
 			
+			// this value changes depending on if the for loop as braces or not. Not sure why
+			int i = ctx.forControl().forUpdate().expressionList().getChildCount()-2;
+			if(ctx.statement(0).block() == null) {
+				i = ctx.forControl().forUpdate().expressionList().getChildCount()-1;
+			}
+			
 			// add iterator(s) to end of the loop
     		// check whether or not this is the only time this var is being assigned a value
-			for(int i = ctx.forControl().forUpdate().expressionList().getChildCount()-2; i >= 0; i--) {
+			for(; i >= 0; i--) {
 //				String iteratorOnly = rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()));
 //	    		String iteration = "\t" + iteratorOnly.substring(0,iteratorOnly.length()-1) + ";\n" + ws;
 				ExpressionContext exp = ctx.forControl().forUpdate().expressionList().expression(i);
@@ -163,6 +182,11 @@ public class PreProcessor extends JavaBaseListener {
 					}
 				
 				String iteration = "\t" + expText + ";\n" + ws;
+				
+				// check if the loop has no braces
+				if(ctx.statement(0).block() == null) {
+					iteration = ";\n\t" + ws + expText;
+				}
 	    		rewriter.insertBefore(ctx.stop, iteration);
 	    		lineIncreases.add(ctx.getStop().getLine() - 1 + extraLines);
 	    		extraLines++;

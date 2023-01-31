@@ -632,66 +632,6 @@ public class GSAConverter extends JavaBaseListener {
     		}
     		
     	}
-    	else if(ctx.FOR() != null) {
-    		
-    		// tab amount
-			String ws = "";
-			for(int i=0; i<tabAmount; i++) {
-				ws += '\t';
-			}
-			
-			// WHILE loop stuff:
-    		// pop off all stack elements for this loop
-    		List<String> varsFound = firstVarFound.pop();
-    		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
-    		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
-			
-			// add the phi entry functions
-    		for(JavaParser.PrimaryContext t : tokens.keySet()) {
-    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
-    			rewriter.replace(t.start,t.stop,txt);
-    			indexIncrease += txt.length();
-    		}
-    		
-    		// add the phi exit functions
-    		for(String v : varCounts.keySet()) {
-    			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
-    				varCounts.put(v, varCounts.get(v) + 1);
-    				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
-    				rewriter.insertAfter(ctx.stop, exit);
-    				indexIncrease += exit.length();
-    				
-    				// define the variable at the top
-    				nullDeclaration(v);
-    				
-    				// add the record statement
-            		int lineNum = ctx.getStart().getLine();
-            		for(Integer n : extraLines) {
-            			if(n < ctx.getStart().getLine()) {
-            				lineNum--;
-            			}
-            		}
-    				rewriter.insertAfter(ctx.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v)) + ";");
-    			}
-    		}
-    		
-    		// move assignments to above the loop header
-    		String assignments = rewriter.getText(new Interval(ctx.forControl().forInit().start.getTokenIndex(), ctx.forControl().SEMI(0).getSymbol().getTokenIndex())) + "\n" + ws;
-    		rewriter.insertBefore(ctx.start, assignments);
-    		
-    		// add iterator to end of the loop
-    		// check whether or not this is the only time this var is being assigned a value
-    		String iteration = "\t" + rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()-1)) + ");\n" + ws;
-    		rewriter.insertBefore(ctx.stop, iteration);
-    		
-    		// FOR loops needs to be transformed into WHILE loops
-    		String condition = rewriter.getText(new Interval(ctx.forControl().expression().start.getTokenIndex(), ctx.forControl().expression().stop.getTokenIndex()));
-    		String whileLoop = "while(" + condition + ")";
-    		rewriter.replace(ctx.start, ctx.RPAREN().getSymbol(), whileLoop);
-    		
-    		
-    		
-    	}
     	
     }
      
@@ -970,7 +910,9 @@ public class GSAConverter extends JavaBaseListener {
     // ARRAYS
     @Override
     public void enterCreatedName(JavaParser.CreatedNameContext ctx) {
-    	rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
+    	if(ctx.primitiveType() != null) {
+    		rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
+    	}
     }
     
     /* HELPERS */

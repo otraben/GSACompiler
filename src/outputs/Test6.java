@@ -10,16 +10,14 @@ package outputs;
 public class Test6 {
 	public static void main(String[] args) {
 		// formal parameters
-		Var<String[]> args_0 = new Var<String[]>(args);
-		Output.record("Test6", "main", 11, "args_0", args_0.value);
 
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
 		Var<Integer> i_0 = null;
 		Var<Integer> j_0 = null;
 		Var<Integer> x_1 = null;
-		Var<Integer> i_1 = null;
 		Var<Integer> j_1 = null;
+		Var<Integer> i_1 = null;
 		Var<Integer> x_2 = null;
 		Var<Integer> i_2 = null;
 		Var<Integer> j_2 = null;
@@ -34,10 +32,10 @@ public class Test6 {
 		while(Phi.Entry(i_0,i_1).value < 10) {
 			x_1 = new Var<Integer>(Phi.Entry(x_0,x_1).value + 1);
 			Output.record("Test6", "main", 14, "x_1", x_1.value);
+			j_1 = new Var<Integer>(Phi.Entry(j_0,j_1).value - Phi.Entry(i_0,i_1).value);
+			Output.record("Test6", "main", 14, "j_1", j_1.value);
 			i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
 			Output.record("Test6", "main", 14, "i_1", i_1.value);
-			j_1 = new Var<Integer>(Phi.Entry(j_0,j_1).value - i_1.value);
-			Output.record("Test6", "main", 14, "j_1", j_1.value);
 		}
 		x_2 = Phi.Exit(x_0,x_1);
 		Output.record("Test6", "main", 13, "x_2", x_2.value);

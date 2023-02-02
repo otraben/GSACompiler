@@ -48,7 +48,7 @@ public class Test9 {
 		Output.record("Test9", "main", 13, "i_0", i_0.value);
 		while(Phi.Entry(i_0,i_1).value<Phi.Entry(x_5,x_5).value)
 			{
-			System.out.println(Phi.Entry(x_4,x_5).value-Phi.Entry(i_-1,i_1).value);
+			System.out.println(Phi.Entry(x_4,x_5).value-Phi.Entry(i_0,i_1).value);
 			i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
 			Output.record("Test9", "main", 17, "i_1", i_1.value);
 		}

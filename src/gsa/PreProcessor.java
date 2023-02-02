@@ -15,6 +15,7 @@ import antlr.JavaBaseListener;
 import antlr.JavaParser;
 import antlr.JavaParser.ExpressionContext;
 import antlr.JavaParser.StatementContext;
+import antlr.JavaParser.VariableDeclaratorContext;
 
 public class PreProcessor extends JavaBaseListener {
 	public TokenStreamRewriter rewriter;
@@ -107,8 +108,14 @@ public class PreProcessor extends JavaBaseListener {
 		
 		// make sure braces are present in all cases
 		for(StatementContext s : ctx.statement()) {
-			if(s.block() == null) {
+			if(s.block() == null && !s.getText().equals(";")) {
 				rewriter.insertBefore(s.start, "{\n\t" + ws);
+				lineIncreases.add(s.start.getLine() + extraLines);
+				rewriter.insertAfter(s.stop, "\n" + ws + "}");
+				lineIncreases.add(s.stop.getLine() + extraLines);
+			}
+			else if(s.block() == null) {
+				rewriter.insertBefore(s.start.getTokenIndex()-1, "{\n\t" + ws);
 				lineIncreases.add(s.start.getLine() + extraLines);
 				rewriter.insertAfter(s.stop, "\n" + ws + "}");
 				lineIncreases.add(s.stop.getLine() + extraLines);
@@ -124,20 +131,13 @@ public class PreProcessor extends JavaBaseListener {
 				lineIncreases.add(ctx.getStart().getLine()- 1 + extraLines);
 				extraLines++;
 			}
-			
-			
-			// this value changes depending on if the for loop as braces or not. Not sure why
-			int i = ctx.forControl().forUpdate().expressionList().getChildCount()-2;
-			if(ctx.statement(0).block() == null) {
-				i = ctx.forControl().forUpdate().expressionList().getChildCount()-1;
-			}
-			
+				
 			// add iterator(s) to end of the loop
     		// check whether or not this is the only time this var is being assigned a value
-			for(; i >= 0; i--) {
+			for(ExpressionContext exp : ctx.forControl().forUpdate().expressionList().expression()) {
 //				String iteratorOnly = rewriter.getText(new Interval(ctx.forControl().forUpdate().start.getTokenIndex(), ctx.RPAREN().getSymbol().getTokenIndex()));
 //	    		String iteration = "\t" + iteratorOnly.substring(0,iteratorOnly.length()-1) + ";\n" + ws;
-				ExpressionContext exp = ctx.forControl().forUpdate().expressionList().expression(i);
+				//ExpressionContext exp = ctx.forControl().forUpdate().expressionList().expression(i);
 				
 				// have to translate the expression to a regular assign expression
 				String expText = "";
@@ -212,10 +212,24 @@ public class PreProcessor extends JavaBaseListener {
 	public void enterLocalVariableDeclaration(JavaParser.LocalVariableDeclarationContext ctx) {
 		String type = ctx.typeSpec().getText();
 		
+		// check if the array is attached to the type
+		String brackets = "";
+		if(type.contains("[]")) {
+			rewriter.replace(ctx.typeSpec().LBRACK(0).getSymbol(), ctx.typeSpec().RBRACK(ctx.typeSpec().RBRACK().size()-1).getSymbol(), "");
+		}
+		while(type.contains("[]")) {
+			brackets += "[]";
+			type = type.substring(0, type.lastIndexOf("[]"));
+		}
+		
 		// tab amount
 		String ws = "";
 		for(int i=0; i<tabAmount+1; i++) {
 			ws += '\t';
+		}
+		
+		for(VariableDeclaratorContext v : ctx.variableDeclarators().variableDeclarator()) {
+			rewriter.insertAfter(v.variableDeclaratorId().stop, brackets);
 		}
 		
 		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
@@ -248,6 +262,12 @@ public class PreProcessor extends JavaBaseListener {
     		
     		// get variable
     		String var = ctx.start.getText();
+    		
+    		// check if this is an array
+
+    		if(ctx.expression(0).LBRACK() != null) {
+    			var = ctx.expression(0).getText();
+    		}
     		
     		// transform it into a regular ASSIGN expression
     		rewriter.insertAfter(op, " " + var + " " + op.getText().replaceAll("=", ""));

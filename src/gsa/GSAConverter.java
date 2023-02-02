@@ -25,9 +25,9 @@ import outputs.Output;
 public class GSAConverter extends JavaBaseListener {
 
     public TokenStreamRewriter rewriter;
-    int indexIncrease = 0;
     int tabAmount = 1;
     List<Integer> extraLines;
+    Stack<HashMap<String,Integer>> scope;
     
     // variable-specific variables
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
@@ -91,6 +91,9 @@ public class GSAConverter extends JavaBaseListener {
         
         firstVarFound = new Stack<>();
         phiEntryVars = new Stack<>();	
+        
+        scope = new Stack<>();
+        scope.push(new HashMap<>());
     }
     
     @Override
@@ -108,40 +111,42 @@ public class GSAConverter extends JavaBaseListener {
     	String var = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText();
     	
     	// check if this is an array
-    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null) {
+    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null) {
     		
-    		// get bracket count
-			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
-			String brackets = "";
-			for(int i=0; i<bracketCount; i++) {
-				brackets += "[]";
-			}
-    		
-    		// delete brackets
-    		rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
-    		
-    		// add array type
-    		varTypes.put(var, getType(ctx.typeSpec().getText() + brackets));
+//    		// get bracket count
+//			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
+//			String brackets = "";
+//			for(int i=0; i<bracketCount; i++) {
+//				brackets += "[]";
+//			}
+//    		
+//    		// delete brackets
+//    		rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
+//    		
+//    		// add array type
+//    		varTypes.put(var, getType(ctx.typeSpec().getText() + brackets));
     	}
     	else {
     		varTypes.put(var, getType(ctx.typeSpec().getText()));
-    	}
-    	
-    	// replace the type with the "Var<>" version
-    	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
-    	
-    	// check if this is NOT an assignment statement
-    	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
-    		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
-    	}
-    	// if it is an assignment statement
-    	else {
-    		// right-side needs to be reformatted
-    		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-	    	newVariable(var, start, end);
     		
+    		// replace the type with the "Var<>" version
+        	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
+        	
+        	// check if this is NOT an assignment statement
+        	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
+        		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
+        	}
+        	// if it is an assignment statement
+        	else {
+        		// right-side needs to be reformatted
+        		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+    	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+    	    	newVariable(var, start, end);
+        		
+        	}
     	}
+    	
+    	
     	
     }
     
@@ -150,7 +155,7 @@ public class GSAConverter extends JavaBaseListener {
     	// array
     	if(currentMethod.equals("") && ctx.LBRACK(0) != null) {
     		// remove all brackets
-    		rewriter.replace(ctx.LBRACK(0).getSymbol(), ctx.RBRACK(ctx.RBRACK().size()-1).getSymbol(), "");
+//    		rewriter.replace(ctx.LBRACK(0).getSymbol(), ctx.RBRACK(ctx.RBRACK().size()-1).getSymbol(), "");
     	}
     }
     
@@ -171,10 +176,14 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void enterFormalParameter(JavaParser.FormalParameterContext ctx) {
-    	formalParams.put(ctx.variableDeclaratorId().getText(), ctx.typeSpec().getText());
+    	// make sure it is not an array
+    	if(ctx.typeSpec().LBRACK(0) == null) {
+    		formalParams.put(ctx.variableDeclaratorId().getText(), ctx.typeSpec().getText());
+    	}
+    	
     	
     	// change type
-    	rewriter.replace(ctx.typeSpec().start, ctx.typeSpec().stop, getType(ctx.typeSpec().getText()));
+    	//rewriter.replace(ctx.typeSpec().start, ctx.typeSpec().stop, getType(ctx.typeSpec().getText()));
     }
     
     @Override
@@ -192,6 +201,8 @@ public class GSAConverter extends JavaBaseListener {
     public void enterBlock(JavaParser.BlockContext ctx) {
     	tabAmount += 1;
     	
+    	scope.push(new HashMap<>());
+    	
     	if(!methodFirstLineFound) {
     		currentFirstLine = ctx.LBRACE().getSymbol();
     		methodFirstLineFound = true;
@@ -199,20 +210,20 @@ public class GSAConverter extends JavaBaseListener {
     		// declare the formal parameters as our Var type
     		String comment2 = "\n\t\t// formal parameters";
     		rewriter.insertAfter(currentFirstLine, comment2);
-    		indexIncrease += comment2.length();
     		for(String key : formalParams.keySet()) {
     			if(varCounts.containsKey(key)) {
     				varCounts.put(key, varCounts.get(key) + 1);
+    				scope.peek().put(key, varCounts.get(key));
     			}
     			else {
     				varCounts.put(key, 0);
+    				scope.peek().put(key, varCounts.get(key));
     				varTypes.put(key, getType(formalParams.get(key)));
     			}
     			
         		// add the actual declaration
     			String decl = "\n\t\tVar<" + varTypes.get(key) + "> " + key + "_" + varCounts.get(key) + " = new Var<" + varTypes.get(key) + ">(" + key + ");";
     			rewriter.insertAfter(currentFirstLine, decl);
-        		indexIncrease += decl.length();
         		
         		// add the record statement
         		int lineNum = ctx.getStart().getLine();
@@ -229,7 +240,6 @@ public class GSAConverter extends JavaBaseListener {
     		// add a comment
     		String comment = "\n\n\t\t// all variables are declared to null";
     		rewriter.insertAfter(currentFirstLine, comment);
-    		indexIncrease += comment.length();
     		
     	}
     }
@@ -237,6 +247,8 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void exitBlock(JavaParser.BlockContext ctx) {
     	tabAmount -= 1;
+    	
+    	scope.pop();
     }
     
     @Override
@@ -245,7 +257,6 @@ public class GSAConverter extends JavaBaseListener {
     		afterVarDefs = true;
     		String comment = "\n\t\t/* PROGRAM STARTS */\n\t\t";
     		rewriter.insertBefore(ctx.start, comment);
-    		indexIncrease += comment.length();
     	}
     }
     
@@ -398,9 +409,11 @@ public class GSAConverter extends JavaBaseListener {
         			ifChainsLastDefinedVarsIndex.pop();
         			HashMap<String,Integer> definedPriorToIfChain = prevVarCounts.pop();
         			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
+        			
         			for(String v : varCounts.keySet()) {
-        				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v))) {
+        				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && scope.peek().containsKey(v)) {
             				varCounts.put(v, varCounts.get(v) + 1);  
+            				scope.peek().put(v, varCounts.get(v));
             				
             				// tab amount
             				String ws = "";
@@ -445,7 +458,6 @@ public class GSAConverter extends JavaBaseListener {
     	    					nullDeclaration(v);
     	    					
     	    					rewriter.insertAfter(par.stop, phi_if);
-    	    					indexIncrease += phi_if.length();
         					}
         					else {
         						// just an if statement
@@ -455,7 +467,6 @@ public class GSAConverter extends JavaBaseListener {
     	    					nullDeclaration(v);
     	    					
     	    					rewriter.insertAfter(par.stop, phi_if);
-    	    					indexIncrease += phi_if.length();
         					}
         					
         					// add the record statement
@@ -493,8 +504,9 @@ public class GSAConverter extends JavaBaseListener {
     			HashMap<String,Integer> definedPriorToIfChain = prevVarCounts.pop();
     			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
     			for(String v : varCounts.keySet()) {
-    				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v))) {
+    				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && scope.peek().containsKey(v)) {
         				varCounts.put(v, varCounts.get(v) + 1);  
+        				scope.peek().put(v, varCounts.get(v));
         				
         				// tab amount
         				String ws = "";
@@ -546,7 +558,6 @@ public class GSAConverter extends JavaBaseListener {
 	    					nullDeclaration(v);
 	    					
 	    					rewriter.insertAfter(par.stop, phi_if);
-	    					indexIncrease += phi_if.length();
     					}
     					else {
     						// always check to make sure the variable was changed in each block
@@ -572,7 +583,6 @@ public class GSAConverter extends JavaBaseListener {
 	    					nullDeclaration(v);
 	    					
 	    					rewriter.insertAfter(par.stop, phi_if);
-	    					indexIncrease += phi_if.length();
     					}
     					
     					// add the record statement
@@ -604,18 +614,39 @@ public class GSAConverter extends JavaBaseListener {
 			
 			// add the phi entry functions
     		for(JavaParser.PrimaryContext t : tokens.keySet()) {
-    			String txt = "Phi.Entry(" + t.getText() + "_" + tokens.get(t) + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
+    			int beforeNum = tokens.get(t);
+    			if(beforeNum == -1) {
+    				if(prevVarCount.get(t.getText()) != null) {
+    					//beforeNum = prevVarCount.get(t.getText());
+    					beforeNum = -1;
+    				}
+    				else {
+    					beforeNum = -1;
+    				}			
+    			}
+    			String txt = "Phi.Entry(" + t.getText() + "_" + beforeNum + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
     			rewriter.replace(t.start,t.stop,txt);
-    			indexIncrease += txt.length();
     		}
     		
     		// add the phi exit functions
+    		l1:
     		for(String v : varCounts.keySet()) {
+    			System.out.println("\n" + v);
+    			// check if this is a variable in scope or if it was newly defined in the loop
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			System.out.println(tempScope);
+    			while(!tempScope.peek().containsKey(v)) {
+    				tempScope.pop();
+    				System.out.println(tempScope);
+    				if(tempScope.isEmpty()) {
+    					continue l1;
+    				}
+    			}
     			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
     				varCounts.put(v, varCounts.get(v) + 1);
+    				scope.peek().put(v, varCounts.get(v));
     				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
     				rewriter.insertAfter(ctx.stop, exit);
-    				indexIncrease += exit.length();
     				
     				// define the variable at the top
     				nullDeclaration(v);
@@ -643,32 +674,28 @@ public class GSAConverter extends JavaBaseListener {
     	String var = ctx.variableDeclarators().start.getText();
     	
     	// check if it is an array
-    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null) {
-    		// get bracket count
-			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
-			String brackets = "";
-			for(int i=0; i<bracketCount; i++) {
-				brackets += "[]";
-			}
-			
-			// delete brackets
-			rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
-			
-			varTypes.put(var, getType(type) + brackets);
+    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null) {
+//    		// get bracket count
+//			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
+//			String brackets = "";
+//			for(int i=0; i<bracketCount; i++) {
+//				brackets += "[]";
+//			}
+//			
+//			// delete brackets
+//			rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
+//			
+//			varTypes.put(var, getType(type) + brackets);
     	}
     	else {
     		varTypes.put(var, getType(type));
+    		
+    		// next, erase the type AND the space
+        	int startIndex = ctx.typeSpec().start.getTokenIndex();
+        	int endIndex = ctx.variableDeclarators().variableDeclarator().get(0).variableDeclaratorId().start.getTokenIndex() - 1;
+        	rewriter.delete(startIndex,endIndex);
     	}
-    	
-    	
-    	// next, erase the type AND the space
-    	int startIndex = ctx.typeSpec().start.getTokenIndex();
-    	int endIndex = ctx.variableDeclarators().variableDeclarator().get(0).variableDeclaratorId().start.getTokenIndex() - 1;
-    	rewriter.delete(startIndex,endIndex);
-    	indexIncrease -= (endIndex - startIndex);
-    	
-    	
-    	
+	
     }
     
     @Override 
@@ -680,36 +707,49 @@ public class GSAConverter extends JavaBaseListener {
 		for(int i=0; i<tabAmount; i++) {
 			ws += '\t';
 		}
+		
+		// make sure this is not an array
+		if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) == null && ctx.typeSpec().LBRACK(0) == null) {
+			
+			// check to make sure this declaration is also an assign statement
+			if(ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer() != null) {
+				
+				// create the variable object
+		    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+		    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+		    	newVariable(var, start, end);	
+		    	
+		    	// add the record statement
+	    		int lineNum = ctx.getStart().getLine();
+	    		for(Integer n : extraLines) {
+	    			if(n < ctx.getStart().getLine()) {
+	    				lineNum--;
+	    			}
+	    		}
+		    	String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
+				rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0, record.length()));
+				
+				// add variable to if statement list of most recent variable definitions
+	    		if(ifChainsLastDefinedVars.size() > 0) {	
+	    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    		}
+			}
+			// declaration with no assign can be erased
+			else {
+				rewriter.insertBefore(ctx.start, "//");
+				
+				// no record statement for no value?
+//				String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
+//				rewriter.insertAfter(ctx.stop, "\n" + ws + record.substring(0, record.length()));
+				
+				// erase
+				rewriter.delete(ctx.start, ctx.stop);
+			}
+			
+			
+		}
     			
-    	// check to make sure this declaration is also an assign statement
-		if(ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer() != null) {
-			
-			// create the variable object
-	    	Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-	    	newVariable(var, start, end);	
-	    	
-	    	// add the record statement
-    		int lineNum = ctx.getStart().getLine();
-    		for(Integer n : extraLines) {
-    			if(n < ctx.getStart().getLine()) {
-    				lineNum--;
-    			}
-    		}
-	    	String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
-			rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0, record.length()));
-		}
-		// declaration with no assign can be erased
-		else {
-			rewriter.insertBefore(ctx.start, "//");
-			
-			// no record statement for no value?
-//			String record = createRecordStatement(className, currentMethod, ctx.getStart().getLine(), var + "_" + varCounts.get(var));
-//			rewriter.insertAfter(ctx.stop, "\n" + ws + record.substring(0, record.length()));
-			
-			// erase
-			rewriter.delete(ctx.start, ctx.stop);
-		}
+    	
     }
     
     @Override 
@@ -721,32 +761,37 @@ public class GSAConverter extends JavaBaseListener {
     	// this variable has been assigned
 		assignedVariableIndexed = true;
 		
-		if(varCounts.containsKey(var)) {
-			varCounts.put(var, varCounts.get(var)+1);
-			
-			// make sure this is an assignment declaration
-			if(ctx.variableInitializer() != null) {
-				String count = "_" + varCounts.get(var);
-				rewriter.insertAfter(t, count);
-				indexIncrease += count.length();
+		// make sure this is not an array
+		if(ctx.variableDeclaratorId().LBRACK(0) == null) {
+			if(varCounts.containsKey(var)) {
+				varCounts.put(var, varCounts.get(var)+1);
+				scope.peek().put(var, varCounts.get(var));
+				
+				// make sure this is an assignment declaration
+				if(ctx.variableInitializer() != null) {
+					String count = "_" + varCounts.get(var);
+					rewriter.insertAfter(t, count);
+				}
+				
 			}
-			
-		}
-		else {
-			varCounts.put(var, 0);
-			// make sure this is an assignment declaration
-			if(ctx.variableInitializer() != null) {
-				String count = "_"+varCounts.get(var);
-				rewriter.insertAfter(t, count);
-				indexIncrease += count.length();
+			else {
+				varCounts.put(var, 0);
+				scope.peek().put(var, varCounts.get(var));
+				// make sure this is an assignment declaration
+				if(ctx.variableInitializer() != null) {
+					String count = "_"+varCounts.get(var);
+					rewriter.insertAfter(t, count);
+				}
+				
 			}
-			
+				
+			if(currentFirstLine != null) {
+				// declare the variable at the top of the file
+				nullDeclaration(var);
+			}
 		}
-			
-		if(currentFirstLine != null) {
-			// declare the variable at the top of the file
-			nullDeclaration(var);
-		}
+		
+		
 		
     }
     	
@@ -754,15 +799,17 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void enterExpression(JavaParser.ExpressionContext ctx) {
     	
-    	if(ctx.ASSIGN() != null) {
+    	if(ctx.ASSIGN() != null && ctx.expression(0).LBRACK() == null) {
     		
     		// first, increase the count for this variable
     		String var = ctx.start.getText();
     		if(varCounts.get(var) != null) {
     			varCounts.put(var, varCounts.get(var)+1);
+    			scope.peek().put(var, varCounts.get(var));
     		}
     		else {
     			varCounts.put(var,0);
+    			scope.peek().put(var, varCounts.get(var));
     		}
     		
     		// set the current assignee to this variable
@@ -777,7 +824,7 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void exitExpression(JavaParser.ExpressionContext ctx) {
-    	if(ctx.ASSIGN() != null) {
+    	if(ctx.ASSIGN() != null && ctx.expression(0).LBRACK() == null) {
     		currentAssignee = "";
     		
     		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
@@ -804,7 +851,7 @@ public class GSAConverter extends JavaBaseListener {
         	rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0,record.length()));
         	
         	// add variable to if statement list of most recent variable definitions
-    		if(ifChainsLastDefinedVars.size() > 0) {
+    		if(ifChainsLastDefinedVars.size() > 0) {	
     			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
     		}
     	}
@@ -864,14 +911,13 @@ public class GSAConverter extends JavaBaseListener {
     		// inside a while loop AND left/right side variables are NOT equivalent
     		else if(assignedVariableIndexed && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText())) {
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
-    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
     		
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		else if(insideIfCondition) {
     			String variable = "_" + beforeIfChain.peek().get(ctx.getText()) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
-        		indexIncrease += variable.length();
     		}
     		else if(ifChainsLastDefinedVars.size() > 0 && assignedVariableIndexed) {
 				int num = (varCounts.get(ctx.getText()));
@@ -883,24 +929,29 @@ public class GSAConverter extends JavaBaseListener {
 				}
     			String variable = "_" + num + ".value";
     			rewriter.insertAfter(ctx.start, variable);
-        		indexIncrease += variable.length();
+    			
+    			
     		}
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
-        		indexIncrease += variable.length();
     		}
     		// right-side variable
     		else if(assignedVariableIndexed) {
-    			String variable = "_" + varCounts.get(ctx.getText()) + ".value";
+//    			Integer varNum = scope.peek().get(ctx.getText());
+//    			Stack<HashMap<String,Integer>> tempScope = scope;
+//    			while(varNum == null && tempScope.size() > 1) {
+//    				tempScope.pop();
+//    				varNum = tempScope.peek().get(ctx.getText());	
+//    			}
+    			int varNum = varCounts.get(ctx.getText());
+    			String variable = "_" + varNum + ".value";
     			rewriter.insertAfter(ctx.start, variable);
-        		indexIncrease += variable.length();
     		}
     		// left-side variable
     		else {
     			String variable = "_" + varCounts.get(ctx.getText());
     			rewriter.insertAfter(ctx.start, variable);
-        		indexIncrease += variable.length();
         		assignedVariableIndexed = true;
     		}
 
@@ -910,9 +961,9 @@ public class GSAConverter extends JavaBaseListener {
     // ARRAYS
     @Override
     public void enterCreatedName(JavaParser.CreatedNameContext ctx) {
-    	if(ctx.primitiveType() != null) {
-    		rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
-    	}
+//    	if(ctx.primitiveType() != null) {
+//    		rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
+//    	}
     }
     
     /* HELPERS */
@@ -948,7 +999,6 @@ public class GSAConverter extends JavaBaseListener {
     	String after = ")";
     	rewriter.insertBefore(start, before);
     	rewriter.insertAfter(end, after);
-    	indexIncrease += before.length() + after.length();
     }
     
     // creates the null declaration at the top of the file
@@ -962,7 +1012,6 @@ public class GSAConverter extends JavaBaseListener {
 			decl = "\n\t\tVar<" + varTypes.get(var) + "> " + var + "_" + varCounts.get(var) + " = null;";
 		}
     	rewriter.insertAfter(currentFirstLine, decl);
-    	indexIncrease += decl.length();
     }
     
     // returns a string of a record statement for the given inputs

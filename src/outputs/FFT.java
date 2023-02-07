@@ -453,6 +453,7 @@ public class FFT {
 				Output.record("FFT", "bitreverse", 185, "tmp_real_1", tmp_real_1.value);
                 tmp_imag_1 = new Var<Double>(data[Phi.Entry(ii_0,ii_0).value + 1]);
 				Output.record("FFT", "bitreverse", 186, "tmp_imag_1", tmp_imag_1.value);
+				System.out.println(data.length + " " + ii_0.value + " " + jj_0.value);
                 data[Phi.Entry(ii_0,ii_0).value] = data[Phi.Entry(jj_0,jj_0).value];
                 data[Phi.Entry(ii_0,ii_0).value + 1] = data[Phi.Entry(jj_0,jj_0).value + 1];
                 data[Phi.Entry(jj_0,jj_0).value] = Phi.Entry(tmp_real_1,tmp_real_1).value;

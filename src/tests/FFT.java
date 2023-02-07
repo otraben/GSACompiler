@@ -184,6 +184,7 @@ public class FFT {
             if (i < j) {
                 double tmp_real = data[ii];
                 double tmp_imag = data[ii + 1];
+                System.out.println(data.length + " " + ii + " " + jj);
                 data[ii] = data[jj];
                 data[ii + 1] = data[jj + 1];
                 data[jj] = tmp_real;

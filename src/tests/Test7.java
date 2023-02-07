@@ -20,6 +20,16 @@ public class Test7 {
 	public static void main(String[] args) {
 		int x = 5;
 		int y = 2 + x;
+		
+		do {
+			x++;
+			y++;
+		} while(x < 10);
+		
+		while(x < 10) {
+			x++;
+		}
+		
 		System.out.println(min(x, y));
 	}
 }

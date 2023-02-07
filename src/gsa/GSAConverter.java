@@ -71,6 +71,9 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
 	
+	// do while loops
+	boolean insideDoLoop = false;
+	
     public GSAConverter(CommonTokenStream tokens, List<Integer> addedLines) {
         rewriter = new TokenStreamRewriter(tokens);
         extraLines = addedLines;
@@ -262,6 +265,7 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void enterStatement(JavaParser.StatementContext ctx) {
+    	
     	if(ctx.IF() != null) {
     		insideIfCondition = true;
     		
@@ -345,7 +349,15 @@ public class GSAConverter extends JavaBaseListener {
     		}
     	}
     	else if(ctx.WHILE() != null) {
-    		insideWhileCondition = true;
+    		
+    		// check for DO WHILE loops
+    		if(ctx.DO() != null) {
+    			insideDoLoop = true;
+    		}
+    		else {
+    			insideWhileCondition = true;
+    		}
+    		
     		
     		// a new while statement has been found, so a stack element must be added for all while loop related stacks
     		firstVarFound.push(new ArrayList<>());
@@ -631,13 +643,10 @@ public class GSAConverter extends JavaBaseListener {
     		// add the phi exit functions
     		l1:
     		for(String v : varCounts.keySet()) {
-    			System.out.println("\n" + v);
     			// check if this is a variable in scope or if it was newly defined in the loop
     			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
-    			System.out.println(tempScope);
     			while(!tempScope.peek().containsKey(v)) {
     				tempScope.pop();
-    				System.out.println(tempScope);
     				if(tempScope.isEmpty()) {
     					continue l1;
     				}
@@ -865,6 +874,11 @@ public class GSAConverter extends JavaBaseListener {
     	else if(insideWhileCondition) {
     		whileConditionDepth += 1;
     	}
+    	else if(insideDoLoop) {
+    		insideWhileCondition = true;
+    		whileConditionDepth += 1;
+    		insideDoLoop = false;
+    	}
     }
     
     @Override 
@@ -995,7 +1009,11 @@ public class GSAConverter extends JavaBaseListener {
     
     // creates the right-hand side of an assignment statement
     public void newVariable(String var, Token start, Token end) {
-    	String before = "new Var<" + varTypes.get(var) + ">(";
+    	String cast = "";
+    	if(varTypes.get(var).equals("Double")) {
+    		cast = "(double)";
+    	}
+    	String before = "new Var<" + varTypes.get(var) + ">(" + cast;
     	String after = ")";
     	rewriter.insertBefore(start, before);
     	rewriter.insertAfter(end, after);

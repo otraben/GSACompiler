@@ -4,8 +4,6 @@ package outputs;
 public class Test1 {
 	public static void main(String[] args) {
 		// formal parameters
-		Var<String[]> args_0 = new Var<String[]>(args);
-		Output.record("Test1", "main", 4, "args_0", args_0.value);
 
 		// all variables are declared to null
 		Var<Integer> x_0 = null;

@@ -50,6 +50,7 @@ public class GSAConverter extends JavaBaseListener {
 	// expression-specific variables
 	boolean assignedVariableIndexed = false;
 	String currentAssignee = "";
+	int currentAssigneeNum = -1;
 	
 	// conditions
 	boolean insideIfCondition = false;
@@ -70,6 +71,7 @@ public class GSAConverter extends JavaBaseListener {
 	// while statement variables
 	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
+	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryCausalNums;
 	
 	// causal map
 	public HashMap<String, List<String>> causalMap;
@@ -96,7 +98,8 @@ public class GSAConverter extends JavaBaseListener {
         beforeIfChain = new Stack<>();
         
         firstVarFound = new Stack<>();
-        phiEntryVars = new Stack<>();	
+        phiEntryVars = new Stack<>();
+        phiEntryCausalNums = new Stack<>();
         
         scope = new Stack<>();
         scope.push(new HashMap<>());
@@ -377,6 +380,7 @@ public class GSAConverter extends JavaBaseListener {
     		// a new while statement has been found, so a stack element must be added for all while loop related stacks
     		firstVarFound.push(new ArrayList<>());
     		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
+    		phiEntryCausalNums.push(new HashMap<JavaParser.PrimaryContext,Integer>());
     		
     		// save the var counts prior to this loop
     		HashMap<String,Integer> preVarCounts = new HashMap<>();
@@ -444,7 +448,6 @@ public class GSAConverter extends JavaBaseListener {
             				
             				// causal map entry
             				List<String> causalVars = new ArrayList<>();
-            				causalMap.put(v + "_" + varCounts.get(v), causalVars);
             				
             				// tab amount
             				String ws = "";
@@ -466,7 +469,7 @@ public class GSAConverter extends JavaBaseListener {
     	    							count = chain.get(i).get(v);
     	    						}
     	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + count + ",";
-    	    						causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + count);
+    	    						causalVars.add(v + "_" + count);
     	    					}
     	    					// number of closing brackets
     	    					String closingBrackets = ")";
@@ -485,8 +488,8 @@ public class GSAConverter extends JavaBaseListener {
     	    					
     	    					// else case
     	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + definedPriorToIfChain.get(v) + closingBrackets + ";";
-    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + count);
-    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + definedPriorToIfChain.get(v));
+    	    					causalVars.add(v + "_" + count);
+    	    					causalVars.add(v + "_" + definedPriorToIfChain.get(v));
     	    					
     	    					// add declaration
     	    					nullDeclaration(v);
@@ -496,8 +499,8 @@ public class GSAConverter extends JavaBaseListener {
         					else {
         						// just an if statement
     	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + chain.get(0).get(v) + "," + v + "_" + definedPriorToIfChain.get(v) + ");";
-    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + chain.get(0).get(v));
-    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + definedPriorToIfChain.get(v));
+    	    					causalVars.add(v + "_" + chain.get(0).get(v));
+    	    					causalVars.add(v + "_" + definedPriorToIfChain.get(v));
     	    					
     	    					// add declaration
     	    					nullDeclaration(v);
@@ -513,8 +516,9 @@ public class GSAConverter extends JavaBaseListener {
         	        			}
         	        		}
         					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v))+ ";");
-        					
+        					causalMap.put(v + "_" + varCounts.get(v), causalVars);
             			}
+        				
         			}
             	}
     		}
@@ -544,6 +548,9 @@ public class GSAConverter extends JavaBaseListener {
         				varCounts.put(v, varCounts.get(v) + 1);  
         				scope.peek().put(v, varCounts.get(v));
         				
+        				// causal map entry
+        				List<String> causalVars = new ArrayList<>();
+        				
         				// tab amount
         				String ws = "";
         				for(int i=0; i<tabAmount; i++) {
@@ -564,6 +571,7 @@ public class GSAConverter extends JavaBaseListener {
 	    							count = chain.get(i).get(v);
 	    						}
 	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + count + ",";
+	    						causalVars.add(v + "_" + count);
 	    					}
 	    					// number of closing brackets
 	    					String closingBrackets = ")";
@@ -589,7 +597,9 @@ public class GSAConverter extends JavaBaseListener {
 	    					
 	    					// else case
 	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + elseCount + closingBrackets + ";";
-
+	    					causalVars.add(v + "_" + count);
+	    					causalVars.add(v + "_" + elseCount);
+	    					
 	    					// add declaration
 	    					nullDeclaration(v);
 	    					
@@ -614,6 +624,8 @@ public class GSAConverter extends JavaBaseListener {
     						
     						// just an if-else statement
 	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + elseCount + ");";
+	    					causalVars.add(v + "_" + count);
+	    					causalVars.add(v + "_" + elseCount);
 	    					
 	    					// add declaration
 	    					nullDeclaration(v);
@@ -629,6 +641,7 @@ public class GSAConverter extends JavaBaseListener {
     	        			}
     	        		}
     					rewriter.insertAfter(par.stop, "\n" + ws + createRecordStatement(className, currentMethod, lineNum, v + "_" + varCounts.get(v))+ ";");
+    					causalMap.put(v + "_" + varCounts.get(v), causalVars);
     					
         			}
     			}
@@ -640,6 +653,7 @@ public class GSAConverter extends JavaBaseListener {
     		// pop off all stack elements for this loop
     		List<String> varsFound = firstVarFound.pop();
     		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
+    		HashMap<JavaParser.PrimaryContext,Integer> causalNums = phiEntryCausalNums.pop();
     		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
     		
     		// tab amount
@@ -650,6 +664,7 @@ public class GSAConverter extends JavaBaseListener {
 			
 			// add the phi entry functions
     		for(JavaParser.PrimaryContext t : tokens.keySet()) {
+    			List<String> causalVars = new ArrayList<>();
     			int beforeNum = tokens.get(t);
     			if(beforeNum == -1) {
     				if(prevVarCount.get(t.getText()) != null) {
@@ -662,6 +677,11 @@ public class GSAConverter extends JavaBaseListener {
     			}
     			String txt = "Phi.Entry(" + t.getText() + "_" + beforeNum + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
     			rewriter.replace(t.start,t.stop,txt);
+    			causalVars.add(t.getText() + "_" + beforeNum);
+    			causalVars.add(t.getText() + "_" + (varCounts.get(t.getText())));
+    			if(causalNums.get(t) != null) {
+    				causalMap.put(t.getText() + "_" + causalNums.get(t), causalVars);
+    			}
     		}
     		
     		// add the phi exit functions
@@ -712,21 +732,8 @@ public class GSAConverter extends JavaBaseListener {
     	String type = ctx.typeSpec().getText();
     	String var = ctx.variableDeclarators().start.getText();
     	
-    	// check if it is an array
-    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null) {
-//    		// get bracket count
-//			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
-//			String brackets = "";
-//			for(int i=0; i<bracketCount; i++) {
-//				brackets += "[]";
-//			}
-//			
-//			// delete brackets
-//			rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
-//			
-//			varTypes.put(var, getType(type) + brackets);
-    	}
-    	else {
+    	// check if it is NOT an array
+    	if(!(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null)) {
     		varTypes.put(var, getType(type));
     		
     		// next, erase the type AND the space
@@ -799,6 +806,7 @@ public class GSAConverter extends JavaBaseListener {
     	
     	// this variable has been assigned
 		assignedVariableIndexed = true;
+		currentAssignee = var;
 		
 		// make sure this is not an array
 		if(ctx.variableDeclaratorId().LBRACK(0) == null) {
@@ -832,6 +840,8 @@ public class GSAConverter extends JavaBaseListener {
 				}
 				
 			}
+			
+			currentAssigneeNum = varCounts.get(var);
 				
 			if(currentFirstLine != null) {
 				// declare the variable at the top of the file
@@ -852,25 +862,22 @@ public class GSAConverter extends JavaBaseListener {
     		// first, increase the count for this variable
     		String var = ctx.start.getText();
     		if(varCounts.get(var) != null) {
-    			varCounts.put(var, varCounts.get(var)+1);
-    			scope.peek().put(var, varCounts.get(var));
-    			
-    			// causal map entry
-				List<String> causalVars = new ArrayList<>();
-				causalMap.put(var + "_" + varCounts.get(var), causalVars);
+    			varCounts.put(var, varCounts.get(var)+1);	
     		}
     		else {
-    			varCounts.put(var,0);
-    			scope.peek().put(var, varCounts.get(var));
-    			
-    			// causal map entry
-				List<String> causalVars = new ArrayList<>();
-				causalMap.put(var + "_" + varCounts.get(var), causalVars);
+    			varCounts.put(var,0);	
     		}
+    		
+    		scope.peek().put(var, varCounts.get(var));
+    		
+    		// causal map entry
+			List<String> causalVars = new ArrayList<>();
+    		causalMap.put(var + "_" + varCounts.get(var), causalVars);
     		
     		// set the current assignee to this variable
     		assignedVariableIndexed = false;
     		currentAssignee = var;
+    		currentAssigneeNum = varCounts.get(var);
     		
     		// declare this variable at the top
     		nullDeclaration(var);
@@ -882,6 +889,7 @@ public class GSAConverter extends JavaBaseListener {
     public void exitExpression(JavaParser.ExpressionContext ctx) {
     	if(ctx.ASSIGN() != null && ctx.expression(0).LBRACK() == null) {
     		currentAssignee = "";
+    		currentAssigneeNum = -1;
     		
     		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
         	Token start = ctx.expression().get(1).start;
@@ -964,6 +972,7 @@ public class GSAConverter extends JavaBaseListener {
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText())) {
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
+    			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
     			
     			// add this var to the list
     			firstVarFound.peek().add(ctx.getText());
@@ -973,6 +982,7 @@ public class GSAConverter extends JavaBaseListener {
     		else if(assignedVariableIndexed && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText())) {
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+    			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
     		
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
@@ -999,24 +1009,34 @@ public class GSAConverter extends JavaBaseListener {
 				}
     			String variable = "_" + num + ".value";
     			rewriter.insertAfter(ctx.start, variable);
-    			
-    			
+
+    			if(causalMap.get(currentAssignee + "_" + currentAssigneeNum) != null) {
+    				causalMap.get(currentAssignee + "_" + currentAssigneeNum).add(ctx.getText() + "_" + num);
+    			}
+
     		}
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
+    			causalMap.get(currentAssignee + "_" + currentAssigneeNum).add(ctx.getText() + "_" + (varCounts.get(ctx.getText())-1));
     		}
     		// right-side variable
     		else if(assignedVariableIndexed) {
     			int varNum = varCounts.get(ctx.getText());
     			String variable = "_" + varNum + ".value";
     			rewriter.insertAfter(ctx.start, variable);
+ 
+    			if(causalMap.get(currentAssignee + "_" + currentAssigneeNum) != null) {
+    				causalMap.get(currentAssignee + "_" + currentAssigneeNum).add(ctx.getText() + "_" + (varCounts.get(ctx.getText())));
+    			}
     		}
     		// left-side variable
     		else {
     			String variable = "_" + varCounts.get(ctx.getText());
     			rewriter.insertAfter(ctx.start, variable);
         		assignedVariableIndexed = true;
+        		currentAssignee = ctx.getText();
+        		currentAssigneeNum = varCounts.get(ctx.getText());
     		}
 
     	}

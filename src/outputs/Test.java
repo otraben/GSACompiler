@@ -42,26 +42,24 @@ public class Test {
         	z_1 = new Var<Integer>(4);
 			Output.record("Test", "main", 14, "z_1", z_1.value);
         }
-        else {
-			if (x_2.value == 1) {
+        else if (x_1.value == 1) {
         	y_3 = new Var<Integer>(12);
-				Output.record("Test", "main", 17, "y_3", y_3.value);
+			Output.record("Test", "main", 17, "y_3", y_3.value);
         	z_2 = new Var<Integer>(3);
-				Output.record("Test", "main", 18, "z_2", z_2.value);
+			Output.record("Test", "main", 18, "z_2", z_2.value);
         }
         else {
         	x_3 = new Var<Integer>(5);
-				Output.record("Test", "main", 21, "x_3", x_3.value);
+			Output.record("Test", "main", 21, "x_3", x_3.value);
         	z_3 = new Var<Integer>(2);
-				Output.record("Test", "main", 22, "z_3", z_3.value);
+			Output.record("Test", "main", 22, "z_3", z_3.value);
         }
-		}
-		x_4 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,x_3);
-		Output.record("Test", "main", 16, "x_4", x_4.value);
-		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,y_3);
-		Output.record("Test", "main", 16, "y_4", y_4.value);
-		z_4 = Phi.If(((x_1.value == (2 * y_1.value))),z_1,z_3);
-		Output.record("Test", "main", 16, "z_4", z_4.value);
+		x_4 = Phi.If(((x_1.value == (2 * y_1.value))),x_2,Phi.If((x_1.value == 1),x_1,x_3));
+		Output.record("Test", "main", 20, "x_4", x_4.value);
+		y_4 = Phi.If(((x_1.value == (2 * y_1.value))),y_2,Phi.If((x_1.value == 1),y_3,y_1));
+		Output.record("Test", "main", 20, "y_4", y_4.value);
+		z_4 = Phi.If(((x_1.value == (2 * y_1.value))),z_1,Phi.If((x_1.value == 1),z_2,z_3));
+		Output.record("Test", "main", 20, "z_4", z_4.value);
         
         System.out.println(y_4.value + z_4.value);
     }

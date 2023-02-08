@@ -71,6 +71,9 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
 	
+	// causal map
+	public HashMap<String, List<String>> causalMap;
+	
 	// do while loops
 	boolean insideDoLoop = false;
 	
@@ -97,6 +100,8 @@ public class GSAConverter extends JavaBaseListener {
         
         scope = new Stack<>();
         scope.push(new HashMap<>());
+        
+        causalMap = new HashMap<>();
     }
     
     @Override
@@ -277,7 +282,12 @@ public class GSAConverter extends JavaBaseListener {
     			}
     		}
     		
-    		// check if this if statement is in a chain
+    		System.out.println(ctx.start);
+    		if(!ifParents.isEmpty())
+    			System.out.println(ctx.getText() + "\t" + parent.parent.parent.parent.getText());
+    		else
+    			System.out.println(ctx + " none");
+    		
     		if(!ifParents.isEmpty() && ifParents.peek().equals(parent)) {  			
     			// add the condition's starting index to the existing stack
     			ifConditionIntervals.peek().add(new Pair<Token,Token>(ctx.parExpression().start, null));
@@ -427,6 +437,10 @@ public class GSAConverter extends JavaBaseListener {
             				varCounts.put(v, varCounts.get(v) + 1);  
             				scope.peek().put(v, varCounts.get(v));
             				
+            				// causal map entry
+            				List<String> causalVars = new ArrayList<>();
+            				causalMap.put(v + "_" + varCounts.get(v), causalVars);
+            				
             				// tab amount
             				String ws = "";
             				for(int i=0; i<tabAmount; i++) {
@@ -447,6 +461,7 @@ public class GSAConverter extends JavaBaseListener {
     	    							count = chain.get(i).get(v);
     	    						}
     	    						phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(i).a.getTokenIndex(), conditions.get(i).b.getTokenIndex())) + "," + v + "_" + count + ",";
+    	    						causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + count);
     	    					}
     	    					// number of closing brackets
     	    					String closingBrackets = ")";
@@ -465,7 +480,9 @@ public class GSAConverter extends JavaBaseListener {
     	    					
     	    					// else case
     	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(conditions.size()-1).a.getTokenIndex(), conditions.get(conditions.size()-1).b.getTokenIndex())) + "," + v + "_" + count + "," + v + "_" + definedPriorToIfChain.get(v) + closingBrackets + ";";
-
+    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + count);
+    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + definedPriorToIfChain.get(v));
+    	    					
     	    					// add declaration
     	    					nullDeclaration(v);
     	    					
@@ -474,6 +491,8 @@ public class GSAConverter extends JavaBaseListener {
         					else {
         						// just an if statement
     	    					phi_if += "Phi.If(" + rewriter.getText(new Interval(conditions.get(0).a.getTokenIndex(), conditions.get(0).b.getTokenIndex())) + "," + v + "_" + chain.get(0).get(v) + "," + v + "_" + definedPriorToIfChain.get(v) + ");";
+    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + chain.get(0).get(v));
+    	    					causalMap.get(v + "_" + varCounts.get(v)).add(v + "_" + definedPriorToIfChain.get(v));
     	    					
     	    					// add declaration
     	    					nullDeclaration(v);
@@ -657,6 +676,12 @@ public class GSAConverter extends JavaBaseListener {
     				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
     				rewriter.insertAfter(ctx.stop, exit);
     				
+    				// causal map entry
+    				List<String> causalVars = new ArrayList<>();
+    				causalVars.add(v + "_" + prevVarCount.get(v));
+    				causalVars.add(v + "_" + (varCounts.get(v)-1));
+    				causalMap.put(v + "_" + varCounts.get(v), causalVars);
+    				
     				// define the variable at the top
     				nullDeclaration(v);
     				
@@ -776,6 +801,10 @@ public class GSAConverter extends JavaBaseListener {
 				varCounts.put(var, varCounts.get(var)+1);
 				scope.peek().put(var, varCounts.get(var));
 				
+				// causal map entry
+				List<String> causalVars = new ArrayList<>();
+				causalMap.put(var + "_" + varCounts.get(var), causalVars);
+				
 				// make sure this is an assignment declaration
 				if(ctx.variableInitializer() != null) {
 					String count = "_" + varCounts.get(var);
@@ -786,6 +815,11 @@ public class GSAConverter extends JavaBaseListener {
 			else {
 				varCounts.put(var, 0);
 				scope.peek().put(var, varCounts.get(var));
+				
+				// causal map entry
+				List<String> causalVars = new ArrayList<>();
+				causalMap.put(var + "_" + varCounts.get(var), causalVars);
+				
 				// make sure this is an assignment declaration
 				if(ctx.variableInitializer() != null) {
 					String count = "_"+varCounts.get(var);
@@ -815,10 +849,18 @@ public class GSAConverter extends JavaBaseListener {
     		if(varCounts.get(var) != null) {
     			varCounts.put(var, varCounts.get(var)+1);
     			scope.peek().put(var, varCounts.get(var));
+    			
+    			// causal map entry
+				List<String> causalVars = new ArrayList<>();
+				causalMap.put(var + "_" + varCounts.get(var), causalVars);
     		}
     		else {
     			varCounts.put(var,0);
     			scope.peek().put(var, varCounts.get(var));
+    			
+    			// causal map entry
+				List<String> causalVars = new ArrayList<>();
+				causalMap.put(var + "_" + varCounts.get(var), causalVars);
     		}
     		
     		// set the current assignee to this variable
@@ -952,12 +994,6 @@ public class GSAConverter extends JavaBaseListener {
     		}
     		// right-side variable
     		else if(assignedVariableIndexed) {
-//    			Integer varNum = scope.peek().get(ctx.getText());
-//    			Stack<HashMap<String,Integer>> tempScope = scope;
-//    			while(varNum == null && tempScope.size() > 1) {
-//    				tempScope.pop();
-//    				varNum = tempScope.peek().get(ctx.getText());	
-//    			}
     			int varNum = varCounts.get(ctx.getText());
     			String variable = "_" + varNum + ".value";
     			rewriter.insertAfter(ctx.start, variable);

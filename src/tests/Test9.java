@@ -8,6 +8,8 @@ public class Test9 {
 		
 		if (x < 5)
 			x = 6;
+		else if (x <6)
+			x = 7;
 		else
 			x = 5;
 		

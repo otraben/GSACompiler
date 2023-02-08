@@ -107,20 +107,40 @@ public class PreProcessor extends JavaBaseListener {
 		}
 		
 		// make sure braces are present in all cases
-		for(StatementContext s : ctx.statement()) {
-			if(s.block() == null && !s.getText().equals(";")) {
-				rewriter.insertBefore(s.start, "{\n\t" + ws);
-				lineIncreases.add(s.start.getLine() + extraLines);
-				rewriter.insertAfter(s.stop, "\n" + ws + "}");
-				lineIncreases.add(s.stop.getLine() + extraLines);
-			}
-			else if(s.block() == null) {
-				rewriter.insertBefore(s.start.getTokenIndex()-1, "{\n\t" + ws);
-				lineIncreases.add(s.start.getLine() + extraLines);
-				rewriter.insertAfter(s.stop, "\n" + ws + "}");
-				lineIncreases.add(s.stop.getLine() + extraLines);
+		for(int i=0; i<ctx.getChildCount(); i++) {
+			// do not separate else if chains
+			if(ctx.getChild(i) instanceof StatementContext && !(ctx.getChild(i-1).getText().contains("else") && ((StatementContext) ctx.getChild(i)).IF() != null)) {
+				StatementContext s = (StatementContext) ctx.getChild(i);
+				if(s.block() == null && !s.getText().equals(";")) {
+					rewriter.insertBefore(s.start, "{\n\t" + ws);
+					lineIncreases.add(s.start.getLine() + extraLines);
+					rewriter.insertAfter(s.stop, "\n" + ws + "}");
+					lineIncreases.add(s.stop.getLine() + extraLines);
+				}
+				else if(s.block() == null) {
+					rewriter.insertBefore(s.start.getTokenIndex()-1, "{\n\t" + ws);
+					lineIncreases.add(s.start.getLine() + extraLines);
+					rewriter.insertAfter(s.stop, "\n" + ws + "}");
+					lineIncreases.add(s.stop.getLine() + extraLines);
+				}
 			}
 		}
+//		for(StatementContext s : ctx.statement()) {
+//			if(s.parent.get) {
+//				if(s.block() == null && !s.getText().equals(";")) {
+//					rewriter.insertBefore(s.start, "{\n\t" + ws);
+//					lineIncreases.add(s.start.getLine() + extraLines);
+//					rewriter.insertAfter(s.stop, "\n" + ws + "}");
+//					lineIncreases.add(s.stop.getLine() + extraLines);
+//				}
+//				else if(s.block() == null) {
+//					rewriter.insertBefore(s.start.getTokenIndex()-1, "{\n\t" + ws);
+//					lineIncreases.add(s.start.getLine() + extraLines);
+//					rewriter.insertAfter(s.stop, "\n" + ws + "}");
+//					lineIncreases.add(s.stop.getLine() + extraLines);
+//				}
+//			}
+//		}
 		
 		if(ctx.FOR() != null && !foreachLoop) {
 			

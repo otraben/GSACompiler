@@ -12,6 +12,7 @@ import antlr.JavaLexer;
 import antlr.JavaParser;
 import java.io.PrintStream;
 import java.io.FileOutputStream;
+import java.util.HashMap;
 import java.util.List;
 
 public class Translator {
@@ -22,6 +23,7 @@ public class Translator {
     String parsedCode;
     String className;
     String srcFolder;
+    HashMap<String, List<String>> causalMap;
 
     public Translator(String file){
 
@@ -71,15 +73,33 @@ public class Translator {
         GSAConverter listener = new GSAConverter(tokens, addedLines);	// object-oriented version
         walker.walk((ParseTreeListener)listener, parseTree);
         parsedCode = listener.rewriter.getText();
-        
+        causalMap = listener.causalMap;
+
         saveFile(); 
     }
     
     void saveFile(){
+    	// GSA Java file
         try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+".java"))){
             out.print(parsedCode);
         } catch (Exception e){
             e.printStackTrace();
+        }
+        
+        // causal map
+        if(causalMap != null) {
+	        try (PrintStream map = new PrintStream(new FileOutputStream("src/outputs/"+className+"Map.txt"))){
+	        	for(String key : causalMap.keySet()) {
+	        		String line = key;
+	        		for(String v : causalMap.get(key)) {
+	        			line += ", " + v;
+	        		}
+	        		map.println(line);
+	        	}
+	           
+	        } catch (Exception e){
+	            e.printStackTrace();
+	        }
         }
     }
 }

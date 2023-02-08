@@ -27,9 +27,9 @@ public class FFT {
 		Var<Double> logN_0 = null;
         
 		/* PROGRAM STARTS */
-		Nd_0 = new Var<Double>((double) N_0.value);
+		Nd_0 = new Var<Double>((double)(double) N_0.value);
 		Output.record("FFT", "num_flops", 21, "Nd_0", Nd_0.value);
-        logN_0 = new Var<Double>((double) log2(N_0.value));
+        logN_0 = new Var<Double>((double)(double) log2(N_0.value));
 		Output.record("FFT", "num_flops", 22, "logN_0", logN_0.value);
 
         return (5.0 * Nd_0.value - 2) * logN_0.value + 2 * (Nd_0.value + 1);
@@ -68,7 +68,7 @@ public class FFT {
 		Output.record("FFT", "inverse", 40, "nd_0", nd_0.value);
         n_0 = new Var<Integer>(nd_0.value / 2);
 		Output.record("FFT", "inverse", 41, "n_0", n_0.value);
-        norm_0 = new Var<Double>(1 / ((double) n_0.value));
+        norm_0 = new Var<Double>((double)1 / ((double) n_0.value));
 		Output.record("FFT", "inverse", 42, "norm_0", norm_0.value);
         i_0 = new Var<Integer>(0);
 		Output.record("FFT", "inverse", 42, "i_0", i_0.value);
@@ -109,14 +109,14 @@ public class FFT {
         transform(data);
         inverse(data);
         // Compute RMS difference.
-        diff_0 = new Var<Double>(0.0);
+        diff_0 = new Var<Double>((double)0.0);
 		Output.record("FFT", "test", 59, "diff_0", diff_0.value);
         i_3 = new Var<Integer>(0);
 		Output.record("FFT", "test", 60, "i_3", i_3.value);
 		while(Phi.Entry(i_3,i_4).value < Phi.Entry(nd_1,nd_1).value) {
-            d_0 = new Var<Double>(data[Phi.Entry(i_3,i_4).value] - copy[Phi.Entry(i_3,i_4).value]);
+            d_0 = new Var<Double>((double)data[Phi.Entry(i_3,i_4).value] - copy[Phi.Entry(i_3,i_4).value]);
 			Output.record("FFT", "test", 61, "d_0", d_0.value);
-            diff_1 = new Var<Double>(Phi.Entry(diff_0,diff_1).value + Phi.Entry(d_0,d_0).value * Phi.Entry(d_0,d_0).value);
+            diff_1 = new Var<Double>((double)Phi.Entry(diff_0,diff_1).value + Phi.Entry(d_0,d_0).value * Phi.Entry(d_0,d_0).value);
 			Output.record("FFT", "test", 62, "diff_1", diff_1.value);
         	i_4 = new Var<Integer>(Phi.Entry(i_3,i_4).value + 1);
 			Output.record("FFT", "test", 63, "i_4", i_4.value);
@@ -300,18 +300,18 @@ public class FFT {
 		dual_0 = new Var<Integer>(1);
 		Output.record("FFT", "transform_internal", 114, "dual_0", dual_0.value);
 		while(Phi.Entry(bit_0,bit_1).value < Phi.Entry(logn_0,logn_0).value) {
-            w_real_0 = new Var<Double>(1.0);
+            w_real_0 = new Var<Double>((double)1.0);
 			Output.record("FFT", "transform_internal", 116, "w_real_0", w_real_0.value);
-            w_imag_0 = new Var<Double>(0.0);
+            w_imag_0 = new Var<Double>((double)0.0);
 			Output.record("FFT", "transform_internal", 117, "w_imag_0", w_imag_0.value);
 
-            theta_0 = new Var<Double>(2.0 * Phi.Entry(direction_0,direction_0).value * Math.PI / (2.0 * (double) Phi.Entry(dual_0,dual_1).value));
+            theta_0 = new Var<Double>((double)2.0 * Phi.Entry(direction_0,direction_0).value * Math.PI / (2.0 * (double) Phi.Entry(dual_0,dual_1).value));
 			Output.record("FFT", "transform_internal", 119, "theta_0", theta_0.value);
-            s_0 = new Var<Double>(Math.sin(Phi.Entry(theta_0,theta_0).value));
+            s_0 = new Var<Double>((double)Math.sin(Phi.Entry(theta_0,theta_0).value));
 			Output.record("FFT", "transform_internal", 120, "s_0", s_0.value);
-            t_0 = new Var<Double>(Math.sin(Phi.Entry(theta_0,theta_0).value / 2.0));
+            t_0 = new Var<Double>((double)Math.sin(Phi.Entry(theta_0,theta_0).value / 2.0));
 			Output.record("FFT", "transform_internal", 121, "t_0", t_0.value);
-            s2_0 = new Var<Double>(2.0 * Phi.Entry(t_0,t_0).value * Phi.Entry(t_0,t_0).value);
+            s2_0 = new Var<Double>((double)2.0 * Phi.Entry(t_0,t_0).value * Phi.Entry(t_0,t_0).value);
 			Output.record("FFT", "transform_internal", 122, "s2_0", s2_0.value);
 
             /* a = 0 */
@@ -323,9 +323,9 @@ public class FFT {
                 j_0 = new Var<Integer>(2 * (Phi.Entry(b_0,b_1).value + Phi.Entry(dual_0,dual_0).value));
 				Output.record("FFT", "transform_internal", 127, "j_0", j_0.value);
 
-                wd_real_0 = new Var<Double>(data[Phi.Entry(j_0,j_0).value]);
+                wd_real_0 = new Var<Double>((double)data[Phi.Entry(j_0,j_0).value]);
 				Output.record("FFT", "transform_internal", 128, "wd_real_0", wd_real_0.value);
-                wd_imag_0 = new Var<Double>(data[Phi.Entry(j_0,j_0).value + 1]);
+                wd_imag_0 = new Var<Double>((double)data[Phi.Entry(j_0,j_0).value + 1]);
 				Output.record("FFT", "transform_internal", 129, "wd_imag_0", wd_imag_0.value);
 
                 data[Phi.Entry(j_0,j_0).value] = data[Phi.Entry(i_12,i_12).value] - Phi.Entry(wd_real_0,wd_real_0).value;
@@ -344,13 +344,13 @@ public class FFT {
 			while(Phi.Entry(a_0,a_1).value < Phi.Entry(dual_0,dual_0).value) {
                 /* trignometric recurrence for w-> exp(i theta) w */
                 {
-                    tmp_real_0 = new Var<Double>(Phi.Entry(w_real_0,w_real_1).value - Phi.Entry(s_0,s_0).value * Phi.Entry(w_imag_0,w_imag_1).value - Phi.Entry(s2_0,s2_0).value * Phi.Entry(w_real_0,w_real_1).value);
+                    tmp_real_0 = new Var<Double>((double)Phi.Entry(w_real_0,w_real_1).value - Phi.Entry(s_0,s_0).value * Phi.Entry(w_imag_0,w_imag_1).value - Phi.Entry(s2_0,s2_0).value * Phi.Entry(w_real_0,w_real_1).value);
 					Output.record("FFT", "transform_internal", 142, "tmp_real_0", tmp_real_0.value);
-                    tmp_imag_0 = new Var<Double>(Phi.Entry(w_imag_0,w_imag_1).value + Phi.Entry(s_0,s_0).value * Phi.Entry(w_real_0,w_real_1).value - Phi.Entry(s2_0,s2_0).value * Phi.Entry(w_imag_0,w_imag_1).value);
+                    tmp_imag_0 = new Var<Double>((double)Phi.Entry(w_imag_0,w_imag_1).value + Phi.Entry(s_0,s_0).value * Phi.Entry(w_real_0,w_real_1).value - Phi.Entry(s2_0,s2_0).value * Phi.Entry(w_imag_0,w_imag_1).value);
 					Output.record("FFT", "transform_internal", 143, "tmp_imag_0", tmp_imag_0.value);
-                    w_real_1 = new Var<Double>(Phi.Entry(tmp_real_0,tmp_real_0).value);
+                    w_real_1 = new Var<Double>((double)Phi.Entry(tmp_real_0,tmp_real_0).value);
 					Output.record("FFT", "transform_internal", 144, "w_real_1", w_real_1.value);
-                    w_imag_1 = new Var<Double>(Phi.Entry(tmp_imag_0,tmp_imag_0).value);
+                    w_imag_1 = new Var<Double>((double)Phi.Entry(tmp_imag_0,tmp_imag_0).value);
 					Output.record("FFT", "transform_internal", 145, "w_imag_1", w_imag_1.value);
                 }
                 b_3 = new Var<Integer>(0);
@@ -361,14 +361,14 @@ public class FFT {
                     j_1 = new Var<Integer>(2 * (Phi.Entry(b_3,b_4).value + Phi.Entry(a_0,a_0).value + Phi.Entry(dual_0,dual_0).value));
 					Output.record("FFT", "transform_internal", 149, "j_1", j_1.value);
 
-                    z1_real_0 = new Var<Double>(data[Phi.Entry(j_1,j_1).value]);
+                    z1_real_0 = new Var<Double>((double)data[Phi.Entry(j_1,j_1).value]);
 					Output.record("FFT", "transform_internal", 150, "z1_real_0", z1_real_0.value);
-                    z1_imag_0 = new Var<Double>(data[Phi.Entry(j_1,j_1).value + 1]);
+                    z1_imag_0 = new Var<Double>((double)data[Phi.Entry(j_1,j_1).value + 1]);
 					Output.record("FFT", "transform_internal", 151, "z1_imag_0", z1_imag_0.value);
 
-                    wd_real_1 = new Var<Double>(Phi.Entry(w_real_1,w_real_1).value * Phi.Entry(z1_real_0,z1_real_0).value - Phi.Entry(w_imag_1,w_imag_1).value * Phi.Entry(z1_imag_0,z1_imag_0).value);
+                    wd_real_1 = new Var<Double>((double)Phi.Entry(w_real_1,w_real_1).value * Phi.Entry(z1_real_0,z1_real_0).value - Phi.Entry(w_imag_1,w_imag_1).value * Phi.Entry(z1_imag_0,z1_imag_0).value);
 					Output.record("FFT", "transform_internal", 151, "wd_real_1", wd_real_1.value);
-                    wd_imag_1 = new Var<Double>(Phi.Entry(w_real_1,w_real_1).value * Phi.Entry(z1_imag_0,z1_imag_0).value + Phi.Entry(w_imag_1,w_imag_1).value * Phi.Entry(z1_real_0,z1_real_0).value);
+                    wd_imag_1 = new Var<Double>((double)Phi.Entry(w_real_1,w_real_1).value * Phi.Entry(z1_imag_0,z1_imag_0).value + Phi.Entry(w_imag_1,w_imag_1).value * Phi.Entry(z1_real_0,z1_real_0).value);
 					Output.record("FFT", "transform_internal", 152, "wd_imag_1", wd_imag_1.value);
 
                     data[Phi.Entry(j_1,j_1).value] = data[Phi.Entry(i_13,i_13).value] - Phi.Entry(wd_real_1,wd_real_1).value;
@@ -449,11 +449,11 @@ public class FFT {
 			Output.record("FFT", "bitreverse", 182, "k_3", k_3.value);
 
             if (Phi.Entry(i_14,i_15).value < Phi.Entry(j_2,j_5).value) {
-                tmp_real_1 = new Var<Double>(data[Phi.Entry(ii_0,ii_0).value]);
+                tmp_real_1 = new Var<Double>((double)data[Phi.Entry(ii_0,ii_0).value]);
 				Output.record("FFT", "bitreverse", 185, "tmp_real_1", tmp_real_1.value);
-                tmp_imag_1 = new Var<Double>(data[Phi.Entry(ii_0,ii_0).value + 1]);
+                tmp_imag_1 = new Var<Double>((double)data[Phi.Entry(ii_0,ii_0).value + 1]);
 				Output.record("FFT", "bitreverse", 186, "tmp_imag_1", tmp_imag_1.value);
-				System.out.println(data.length + " " + ii_0.value + " " + jj_0.value);
+                System.out.println(data.length + " " + Phi.Entry(ii_0,ii_0).value + " " + Phi.Entry(jj_0,jj_0).value);
                 data[Phi.Entry(ii_0,ii_0).value] = data[Phi.Entry(jj_0,jj_0).value];
                 data[Phi.Entry(ii_0,ii_0).value + 1] = data[Phi.Entry(jj_0,jj_0).value + 1];
                 data[Phi.Entry(jj_0,jj_0).value] = Phi.Entry(tmp_real_1,tmp_real_1).value;
@@ -463,20 +463,20 @@ public class FFT {
             while (Phi.Entry(k_3,k_4).value <= Phi.Entry(j_2,j_3).value) {
                 //j = j - k ;
                 j_3 = new Var<Integer>(Phi.Entry(j_2,j_3).value - Phi.Entry(k_3,k_4).value);
-				Output.record("FFT", "bitreverse", 194, "j_3", j_3.value);
+				Output.record("FFT", "bitreverse", 195, "j_3", j_3.value);
 
                 //k = k / 2 ;
                 k_4 = new Var<Integer>(Phi.Entry(k_3,k_4).value >> 1);
-				Output.record("FFT", "bitreverse", 197, "k_4", k_4.value);
+				Output.record("FFT", "bitreverse", 198, "k_4", k_4.value);
             }
 			j_4 = Phi.Exit(j_2,j_3);
-			Output.record("FFT", "bitreverse", 192, "j_4", j_4.value);
+			Output.record("FFT", "bitreverse", 193, "j_4", j_4.value);
 			k_5 = Phi.Exit(k_3,k_4);
-			Output.record("FFT", "bitreverse", 192, "k_5", k_5.value);
+			Output.record("FFT", "bitreverse", 193, "k_5", k_5.value);
             j_5 = new Var<Integer>(Phi.Entry(j_4,j_5).value + Phi.Entry(k_5,k_5).value);
-			Output.record("FFT", "bitreverse", 199, "j_5", j_5.value);
+			Output.record("FFT", "bitreverse", 200, "j_5", j_5.value);
         	i_15 = new Var<Integer>(Phi.Entry(i_14,i_15).value + 1);
-			Output.record("FFT", "bitreverse", 200, "i_15", i_15.value);
+			Output.record("FFT", "bitreverse", 201, "i_15", i_15.value);
 		}
 		i_16 = Phi.Exit(i_14,i_15);
 		Output.record("FFT", "bitreverse", 173, "i_16", i_16.value);

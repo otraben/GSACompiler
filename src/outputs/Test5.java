@@ -4,8 +4,6 @@ package outputs;
 public class Test5 {
 	public static void main(String[] args) {
 		// formal parameters
-		Var<String[]> args_0 = new Var<String[]>(args);
-		Output.record("Test5", "main", 4, "args_0", args_0.value);
 
 		// all variables are declared to null
 		Var<Integer> x_0 = null;
@@ -19,15 +17,10 @@ public class Test5 {
 		Var<Integer> x_2 = null;
 		Var<Integer> x_3 = null;
 		Var<Integer> x_4 = null;
-		Var<Integer> y_4 = null;
-		Var<Integer> z_2 = null;
 		Var<Integer> x_5 = null;
 		Var<Integer> x_6 = null;
-		Var<Integer> y_5 = null;
-		Var<Integer> z_3 = null;
-		Var<Integer> x_7 = null;
-		Var<Integer> y_6 = null;
-		Var<Integer> z_4 = null;
+		Var<Integer> y_4 = null;
+		Var<Integer> z_2 = null;
 		
 		/* PROGRAM STARTS */
 		x_0 = new Var<Integer>(5);
@@ -58,29 +51,19 @@ public class Test5 {
 				}
 				x_4 = Phi.If((y_0.value > 5),x_2,x_3);
 				Output.record("Test5", "main", 19, "x_4", x_4.value);
-				y_4 = Phi.If((y_0.value > 5),y_3,y_0);
-				Output.record("Test5", "main", 19, "y_4", y_4.value);
-				z_2 = Phi.If((y_0.value > 5),z_1,z_0);
-				Output.record("Test5", "main", 19, "z_2", z_2.value);
 			}
 			else if(y_0.value < 10) {
 				x_5 = new Var<Integer>(x_0.value - 1);
 				Output.record("Test5", "main", 24, "x_5", x_5.value);
 			}
-			x_6 = Phi.If((y_0.value < 10 && z_0.value > 1),x_4,Phi.If((y_0.value < 10),x_5,x_0));
-			Output.record("Test5", "main", 23, "x_6", x_6.value);
-			y_5 = Phi.If((y_0.value < 10 && z_0.value > 1),y_4,Phi.If((y_0.value < 10),y_0,y_0));
-			Output.record("Test5", "main", 23, "y_5", y_5.value);
-			z_3 = Phi.If((y_0.value < 10 && z_0.value > 1),z_2,Phi.If((y_0.value < 10),z_0,z_0));
-			Output.record("Test5", "main", 23, "z_3", z_3.value);
 		}
-		x_7 = Phi.If((x_0.value < 0),x_6,x_0);
-		Output.record("Test5", "main", 9, "x_7", x_7.value);
-		y_6 = Phi.If((x_0.value < 0),y_5,y_0);
-		Output.record("Test5", "main", 9, "y_6", y_6.value);
-		z_4 = Phi.If((x_0.value < 0),z_3,z_0);
-		Output.record("Test5", "main", 9, "z_4", z_4.value);
+		x_6 = Phi.If((x_0.value < 0),x_5,x_0);
+		Output.record("Test5", "main", 9, "x_6", x_6.value);
+		y_4 = Phi.If((x_0.value < 0),y_3,y_0);
+		Output.record("Test5", "main", 9, "y_4", y_4.value);
+		z_2 = Phi.If((x_0.value < 0),z_1,z_0);
+		Output.record("Test5", "main", 9, "z_2", z_2.value);
 		
-		System.out.println(x_7.value + y_6.value + z_4.value);
+		System.out.println(x_6.value + y_4.value + z_2.value);
 	}
 }

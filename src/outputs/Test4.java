@@ -44,18 +44,16 @@ public class Test4 {
 				if (j_2.value < 5) {
 					System.out.println(j_2.value);
 				}
-				else {
-					if(j_2.value > 9) {
+				else if(j_2.value > 9) {
 					i_4 = new Var<Integer>(i_3.value - 4);
-						Output.record("Test4", "main", 19, "i_4", i_4.value);
+					Output.record("Test4", "main", 19, "i_4", i_4.value);
 				}
 				else {
 					i_5 = new Var<Integer>(i_3.value + 2);
-						Output.record("Test4", "main", 22, "i_5", i_5.value);
+					Output.record("Test4", "main", 22, "i_5", i_5.value);
 				}
-				}
-				i_6 = Phi.If((j_2.value < 5),i_3,i_5);
-				Output.record("Test4", "main", 18, "i_6", i_6.value);
+				i_6 = Phi.If((j_2.value < 5),i_3,Phi.If((j_2.value > 9),i_4,i_5));
+				Output.record("Test4", "main", 21, "i_6", i_6.value);
 			}
 			i_7 = Phi.Exit(i_2,i_6);
 			Output.record("Test4", "main", 12, "i_7", i_7.value);

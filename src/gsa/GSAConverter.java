@@ -282,12 +282,6 @@ public class GSAConverter extends JavaBaseListener {
     			}
     		}
     		
-    		System.out.println(ctx.start);
-    		if(!ifParents.isEmpty())
-    			System.out.println(ctx.getText() + "\t" + parent.parent.parent.parent.getText());
-    		else
-    			System.out.println(ctx + " none");
-    		
     		if(!ifParents.isEmpty() && ifParents.peek().equals(parent)) {  			
     			// add the condition's starting index to the existing stack
     			ifConditionIntervals.peek().add(new Pair<Token,Token>(ctx.parExpression().start, null));
@@ -349,12 +343,23 @@ public class GSAConverter extends JavaBaseListener {
     				finalIfBlocks.push(ctx.statement(0));
     			}
     			
-    			// pre-if chain variable counts
-            	HashMap<String,Integer> preVarCounts = new HashMap<>();
-            	preVarCounts.putAll(varCounts);
-            	prevVarCounts.push(preVarCounts);
-            	prevVarCounts.push(preVarCounts);
-            	beforeIfChain.push(preVarCounts);
+    			if(!beforeIfChain.isEmpty()) {
+    				// pre-if chain variable counts
+	            	HashMap<String,Integer> preVarCounts = new HashMap<>();
+	            	preVarCounts.putAll(varCounts);
+	            	prevVarCounts.push(preVarCounts);
+	            	prevVarCounts.push(preVarCounts);
+	            	beforeIfChain.push(beforeIfChain.peek());
+    			}
+    			else {
+    				// pre-if chain variable counts
+	            	HashMap<String,Integer> preVarCounts = new HashMap<>();
+	            	preVarCounts.putAll(varCounts);
+	            	prevVarCounts.push(preVarCounts);
+	            	prevVarCounts.push(preVarCounts);
+	            	beforeIfChain.push(preVarCounts);
+    			}
+    			
     			
     		}
     	}
@@ -972,13 +977,22 @@ public class GSAConverter extends JavaBaseListener {
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		else if(insideIfCondition) {
-    			String variable = "_" + beforeIfChain.peek().get(ctx.getText()) + ".value";
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			while(!tempScope.isEmpty() && !tempScope.peek().containsKey(ctx.getText())) {
+    				tempScope.pop();
+    			}
+    			String variable = "_" + tempScope.peek().get(ctx.getText()) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
     		}
     		else if(ifChainsLastDefinedVars.size() > 0 && assignedVariableIndexed) {
 				int num = (varCounts.get(ctx.getText()));
 				if(!ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).containsKey(ctx.getText())) {
-					num = beforeIfChain.peek().get(ctx.getText());
+					Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+					tempScope.pop();
+	    			while(!tempScope.isEmpty() && !tempScope.peek().containsKey(ctx.getText())) {
+	    				tempScope.pop();
+	    			}
+					num = tempScope.peek().get(ctx.getText());
 				}
 				else if(currentAssignee.equals(ctx.getText())) {
 					num = (varCounts.get(ctx.getText())-1);

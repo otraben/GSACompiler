@@ -28,6 +28,9 @@ public class PreProcessor extends JavaBaseListener {
 	// foreach loops
 	boolean foreachLoop = false;
 	
+	// package
+	Token p;
+	
 	public PreProcessor(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);   
     }
@@ -40,7 +43,16 @@ public class PreProcessor extends JavaBaseListener {
     public void enterPackageDeclaration(JavaParser.PackageDeclarationContext ctx) {
 		// add this file to the outputs package
     	Token t = ctx.qualifiedName().start;
-    	rewriter.replace(t, "outputs");
+    	p = t;
+    	
+    	// add imports
+    	rewriter.insertAfter(ctx.stop, "\nimport gsa.Output;\nimport gsa.Phi;\nimport gsa.Var;\n");
+    	lineIncreases.add(ctx.getStart().getLine() + extraLines);
+    	lineIncreases.add(ctx.getStart().getLine() + extraLines);
+    	lineIncreases.add(ctx.getStart().getLine() + extraLines);
+    	lineIncreases.add(ctx.getStart().getLine() + extraLines);
+		extraLines+=4;
+    	
     }
 	
 	@Override
@@ -49,6 +61,9 @@ public class PreProcessor extends JavaBaseListener {
     	if(className == "") {
     		className = ctx.Identifier().getText();
     	}
+    	
+    	// add new package title
+    	rewriter.replace(p, "outputs." + className + "_Output");
     }
     
     @Override

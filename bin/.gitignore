@@ -1,3 +1,8 @@
-/tests/
-/outputs/
 /gsa/
+/.DS_Store
+/get-pip.p
+/get-pip.py
+/outputs/
+/tests/
+/Test1/
+/Test1.class

@@ -1,4 +1,4 @@
-package outputs;
+package gsa;
 
 public class Var<T> {
 	

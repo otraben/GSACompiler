@@ -3,6 +3,7 @@ package tests;
 public class Test7 {
 	
 	int x,y;
+	static int z = 10;
 	
 	public static int min(int a, int b) {
 		int var1 = a;
@@ -30,6 +31,7 @@ public class Test7 {
 			x++;
 		}
 		
-		System.out.println(min(x, y));
+		z += x;
+		System.out.println(min(x, y) + z);
 	}
 }

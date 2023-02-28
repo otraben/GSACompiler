@@ -32,10 +32,11 @@ public class GSAConverter extends JavaBaseListener {
     // variable-specific variables
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
 	public Map<String, String> varTypes;	// keeps track of the type of each variable
+	public List<String> globals;
 	
 	// class-specific variables
 	Token classFirstLine;
-	String className;
+	String className = "";
 	
 	// method-specific variables
 	boolean methodFirstLineFound = false;
@@ -85,6 +86,7 @@ public class GSAConverter extends JavaBaseListener {
         
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
+        globals = new ArrayList<>();
         
         prevVarCounts = new Stack<>();
         
@@ -109,7 +111,18 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
-    	className = ctx.Identifier().getText();
+    	// the first class name should be the name of the file
+    	if(className == "") {
+    		className = ctx.Identifier().getText();
+    	}
+    }
+    
+    @Override
+    public void enterInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
+    	// the first interface name should be the name of the file
+    	if(className == "") {
+    		className = ctx.Identifier().getText();
+    	}
     }
     
     @Override
@@ -120,6 +133,7 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void exitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
     	String var = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText();
+    	globals.add(var);
     	
     	// check if this is an array
     	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null) {
@@ -137,25 +151,25 @@ public class GSAConverter extends JavaBaseListener {
 //    		// add array type
 //    		varTypes.put(var, getType(ctx.typeSpec().getText() + brackets));
     	}
-    	else {
-    		varTypes.put(var, getType(ctx.typeSpec().getText()));
-    		
-    		// replace the type with the "Var<>" version
-        	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
-        	
-        	// check if this is NOT an assignment statement
-        	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
-        		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
-        	}
-        	// if it is an assignment statement
-        	else {
-        		// right-side needs to be reformatted
-        		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-    	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-    	    	newVariable(var, start, end);
-        		
-        	}
-    	}
+//    	else {
+//    		varTypes.put(var, getType(ctx.typeSpec().getText()));
+//    		
+//    		// replace the type with the "Var<>" version
+//        	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
+//        	
+//        	// check if this is NOT an assignment statement
+//        	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
+//        		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
+//        	}
+//        	// if it is an assignment statement
+//        	else {
+//        		// right-side needs to be reformatted
+//        		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
+//    	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
+//    	    	newVariable(var, start, end);
+//        		
+//        	}
+//    	}
     	
     	
     	
@@ -736,10 +750,15 @@ public class GSAConverter extends JavaBaseListener {
     	if(!(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null)) {
     		varTypes.put(var, getType(type));
     		
-    		// next, erase the type AND the space
-        	int startIndex = ctx.typeSpec().start.getTokenIndex();
+    		// next, erase the type AND the space (and any other keywords, like final)
+        	int startIndex = ctx.start.getTokenIndex();
         	int endIndex = ctx.variableDeclarators().variableDeclarator().get(0).variableDeclaratorId().start.getTokenIndex() - 1;
         	rewriter.delete(startIndex,endIndex);
+        	
+        	// if this is inside a loop, add it to the firstVarFound list, because it should not have phi entry functions
+        	if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(var)) {
+        		firstVarFound.peek().add(var);
+        	}
     	}
 	
     }
@@ -801,50 +820,49 @@ public class GSAConverter extends JavaBaseListener {
     @Override 
     public void enterVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) { 
     	
-    	Token t = ctx.variableDeclaratorId().getStart();
-    	String var = t.getText();
-    	
-    	// this variable has been assigned
-		assignedVariableIndexed = true;
-		currentAssignee = var;
-		
-		// make sure this is not an array
-		if(ctx.variableDeclaratorId().LBRACK(0) == null) {
-			if(varCounts.containsKey(var)) {
-				varCounts.put(var, varCounts.get(var)+1);
-				scope.peek().put(var, varCounts.get(var));
-				
-				// causal map entry
-				List<String> causalVars = new ArrayList<>();
-				causalMap.put(var + "_" + varCounts.get(var), causalVars);
-				
-				// make sure this is an assignment declaration
-				if(ctx.variableInitializer() != null) {
-					String count = "_" + varCounts.get(var);
-					rewriter.insertAfter(t, count);
-				}
-				
-			}
-			else {
-				varCounts.put(var, 0);
-				scope.peek().put(var, varCounts.get(var));
-				
-				// causal map entry
-				List<String> causalVars = new ArrayList<>();
-				causalMap.put(var + "_" + varCounts.get(var), causalVars);
-				
-				// make sure this is an assignment declaration
-				if(ctx.variableInitializer() != null) {
-					String count = "_"+varCounts.get(var);
-					rewriter.insertAfter(t, count);
-				}
-				
-			}
+    	// ensure this is NOT a global variable
+    	if(currentFirstLine != null) {
+	    	Token t = ctx.variableDeclaratorId().getStart();
+	    	String var = t.getText();
+	    	
+	    	// this variable has been assigned
+			assignedVariableIndexed = true;
+			currentAssignee = var;
 			
-			currentAssigneeNum = varCounts.get(var);
+			// make sure this is not an array
+			if(ctx.variableDeclaratorId().LBRACK(0) == null) {
+				if(varCounts.containsKey(var)) {
+					varCounts.put(var, varCounts.get(var)+1);
+					scope.peek().put(var, varCounts.get(var));
+					
+					// causal map entry
+					List<String> causalVars = new ArrayList<>();
+					causalMap.put(var + "_" + varCounts.get(var), causalVars);
+					
+					// make sure this is an assignment declaration
+					if(ctx.variableInitializer() != null) {
+						String count = "_" + varCounts.get(var);
+						rewriter.insertAfter(t, count);
+					}
+					
+				}
+				else {
+					varCounts.put(var, 0);
+					scope.peek().put(var, varCounts.get(var));
+					
+					// causal map entry
+					List<String> causalVars = new ArrayList<>();
+					causalMap.put(var + "_" + varCounts.get(var), causalVars);
+					
+					// make sure this is an assignment declaration
+					if(ctx.variableInitializer() != null) {
+						String count = "_"+varCounts.get(var);
+						rewriter.insertAfter(t, count);
+					}
+					
+				}
 				
-			if(currentFirstLine != null) {
-				// declare the variable at the top of the file
+				currentAssigneeNum = varCounts.get(var);
 				nullDeclaration(var);
 			}
 		}
@@ -852,35 +870,49 @@ public class GSAConverter extends JavaBaseListener {
 		
 		
     }
+    
+    @Override
+    public void exitVariableDeclarator(JavaParser.VariableDeclaratorContext ctx) {
+    	// this variable has been assigned
+    	assignedVariableIndexed = false;
+    	currentAssignee = "";
+    }
     	
     
     @Override
     public void enterExpression(JavaParser.ExpressionContext ctx) {
     	
     	if(ctx.ASSIGN() != null && ctx.expression(0).LBRACK() == null) {
-    		
     		// first, increase the count for this variable
     		String var = ctx.start.getText();
-    		if(varCounts.get(var) != null) {
-    			varCounts.put(var, varCounts.get(var)+1);	
-    		}
-    		else {
-    			varCounts.put(var,0);	
-    		}
-    		
-    		scope.peek().put(var, varCounts.get(var));
-    		
-    		// causal map entry
-			List<String> causalVars = new ArrayList<>();
-    		causalMap.put(var + "_" + varCounts.get(var), causalVars);
     		
     		// set the current assignee to this variable
     		assignedVariableIndexed = false;
     		currentAssignee = var;
-    		currentAssigneeNum = varCounts.get(var);
+    		currentAssigneeNum = -1;
     		
-    		// declare this variable at the top
-    		nullDeclaration(var);
+    		// check if it is a global variable
+    		if(!globals.contains(var) || varCounts.get(var) != null) {
+    		
+	    		if(varCounts.get(var) != null) {
+	    			varCounts.put(var, varCounts.get(var)+1);	
+	    		}
+	    		else {
+	    			varCounts.put(var,0);	
+	    		}
+	    		
+	    		scope.peek().put(var, varCounts.get(var));
+	    		
+	    		// causal map entry
+				List<String> causalVars = new ArrayList<>();
+	    		causalMap.put(var + "_" + varCounts.get(var), causalVars);
+	    		
+	    		// declare this variable at the top
+	    		nullDeclaration(var);
+    		}
+    		else {
+    			assignedVariableIndexed = true;
+    		}
     	}
     	
     }
@@ -890,33 +922,41 @@ public class GSAConverter extends JavaBaseListener {
     	if(ctx.ASSIGN() != null && ctx.expression(0).LBRACK() == null) {
     		currentAssignee = "";
     		currentAssigneeNum = -1;
+    		String var = ctx.start.getText();
     		
-    		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
-        	Token start = ctx.expression().get(1).start;
-        	Token end = ctx.expression().get(1).stop;
-        	newVariable(ctx.start.getText(), start, end);
-        	
-        	String var = ctx.start.getText();
-        	
-        	// tab amount
-    		String ws = "";
-    		for(int i=0; i<tabAmount; i++) {
-    			ws += '\t';
-    		}
+    		// check if it is a global variable
+    		if(!globals.contains(var) || varCounts.get(var) != null) {
     		
-    		// add the record statement
-    		int lineNum = ctx.getStart().getLine();
-    		for(Integer n : extraLines) {
-    			if(n < ctx.getStart().getLine()) {
-    				lineNum--;
-    			}
-    		}
-    		String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
-        	rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0,record.length()));
-        	
-        	// add variable to if statement list of most recent variable definitions
-    		if(ifChainsLastDefinedVars.size() > 0) {	
-    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
+	        	Token start = ctx.expression().get(1).start;
+	        	Token end = ctx.expression().get(1).stop;
+	        	newVariable(ctx.start.getText(), start, end);
+
+	        	// tab amount
+	    		String ws = "";
+	    		for(int i=0; i<tabAmount; i++) {
+	    			ws += '\t';
+	    		}
+	    		
+	    		// add the record statement
+	    		int lineNum = ctx.getStart().getLine();
+	    		for(Integer n : extraLines) {
+	    			if(n < ctx.getStart().getLine()) {
+	    				lineNum--;
+	    			}
+	    		}
+	    		String record = createRecordStatement(className, currentMethod, lineNum, var + "_" + varCounts.get(var));
+	        	rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0,record.length()));
+	        	
+	        	// add variable to if statement list of most recent variable definitions
+	    		if(ifChainsLastDefinedVars.size() > 0) {	
+	    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    		}
+	    		
+	    		// if inside a loop, make sure the assigned variable will no longer be used for phi entry functions, because it has been used
+	    		if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(var)) {
+	    			firstVarFound.peek().add(var);
+	    		}
     		}
     	}
     }
@@ -1015,6 +1055,11 @@ public class GSAConverter extends JavaBaseListener {
     			}
 
     		}
+    		// not an assignment statement
+    		else if(currentAssignee.equals("")) {
+    			String variable = "_" + (varCounts.get(ctx.getText())) + ".value";
+    			rewriter.insertAfter(ctx.start, variable);
+    		}
     		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText())) {
     			String variable = "_" + (varCounts.get(ctx.getText())-1) + ".value";
     			rewriter.insertAfter(ctx.start, variable);
@@ -1072,6 +1117,12 @@ public class GSAConverter extends JavaBaseListener {
     			return "Double" + brackets;
     		case "float":
     			return "Float" + brackets;
+    		case "long":
+    			return "Long" + brackets;
+    		case "short":
+    			return "Short" + brackets;
+    		case "byte":
+    			return "Byte" + brackets;
     		default:
     			return t + brackets;
     	}
@@ -1080,7 +1131,7 @@ public class GSAConverter extends JavaBaseListener {
     // creates the right-hand side of an assignment statement
     public void newVariable(String var, Token start, Token end) {
     	String cast = "";
-    	if(varTypes.get(var).equals("Double")) {
+    	if(varTypes.get(var) != null && varTypes.get(var).equals("Double")) {
     		cast = "(double)";
     	}
     	String before = "new Var<" + varTypes.get(var) + ">(" + cast;

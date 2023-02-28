@@ -19,7 +19,7 @@ import antlr.JavaParser.VariableDeclaratorContext;
 
 public class PreProcessor extends JavaBaseListener {
 	public TokenStreamRewriter rewriter;
-	public String className;
+	public String className = "";
 	int tabAmount = 0;
 	
 	List<Integer> lineIncreases = new ArrayList<>();
@@ -45,8 +45,18 @@ public class PreProcessor extends JavaBaseListener {
 	
 	@Override
     public void enterClassDeclaration(JavaParser.ClassDeclarationContext ctx) {
-		// save the class name for the translator
-    	className = ctx.Identifier().getText();
+    	// the first class name should be the name of the file
+    	if(className == "") {
+    		className = ctx.Identifier().getText();
+    	}
+    }
+    
+    @Override
+    public void enterInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
+    	// the first interface name should be the name of the file
+    	if(className == "") {
+    		className = ctx.Identifier().getText();
+    	}
     }
 	
 	@Override

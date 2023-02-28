@@ -59,7 +59,7 @@ public class Translator {
         // re-populate the lexer and the parser using the new pre-processed file
         CharStream inputStream = null;
         try {
-        	inputStream = CharStreams.fromFileName(srcFolder + "outputs\\" + className + ".java");
+        	inputStream = CharStreams.fromFileName(srcFolder + "outputs/" + className + ".java");
         }
         catch(Exception e) {
         	System.out.println(e);

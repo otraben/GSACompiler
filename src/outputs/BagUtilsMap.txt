@@ -1,0 +1,2 @@
+EMPTY_SORTED_BAG_0, bag_0, bag_1, bag_2, predicate_0, bag_3, transformer_0, bag_4, bag_5, bag_6, bag_7, predicate_1, bag_8, transformer_1, EMPTY_BAG_0, EMPTY_SORTED_BAG_-1
+EMPTY_BAG_0

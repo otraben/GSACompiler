@@ -7,6 +7,7 @@ public class Test {
         x = 5;
         int y = x - 12;
         int z, w;
+        final int p = 1;
         y = 4;
         if((x == (2 * y))) {
         	y = 10;
@@ -22,6 +23,6 @@ public class Test {
         	z = 2;
         }
         
-        System.out.println(y + z);
+        System.out.println(y + z + p);
     }
 }

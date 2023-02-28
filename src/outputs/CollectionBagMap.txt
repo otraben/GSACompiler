@@ -1,0 +1,18 @@
+added_0
+modified_0
+modified_1
+serialVersionUID_0, bag_0, bag_0, out_0, out_0, in_0, in_0
+obj_0
+modified_2, modified_0, modified_1
+result_2, result_0, result_1
+result_0
+result_1, result_0, result_1
+changed_3, obj_0, obj_0
+e_1, e_0, e_1
+e_0, e_-1, e_0, object_0
+changed_0
+changed_2, changed_0, changed_1
+i_1, i_1, i_1
+i_0, i_0, i_0
+changed_1, changed_0, changed_1
+coll_3, coll_3, coll_3

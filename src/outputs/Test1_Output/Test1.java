@@ -7,6 +7,8 @@ import gsa.Var;
 // tests different declaration types, and an if statement with no else
 public class Test1 {
 	public static void main(String[] args) {
+		Output.newExecution("Test1");
+
 		// formal parameters
 
 		// all variables are declared to null

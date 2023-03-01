@@ -1,0 +1,20 @@
+*** new execution ***
+x_0,0
+y_0,hello
+x_2,0
+*** new execution ***
+x_0,0
+y_0,hello
+x_2,0
+*** new execution ***
+x_0,0
+y_0,hello
+x_2,0
+*** new execution ***
+x_0,0
+y_0,hello
+x_2,0
+*** new execution ***
+x_0,0
+y_0,hello
+x_2,0

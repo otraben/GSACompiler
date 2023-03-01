@@ -232,6 +232,12 @@ public class GSAConverter extends JavaBaseListener {
     		currentFirstLine = ctx.LBRACE().getSymbol();
     		methodFirstLineFound = true;
     		
+    		// is this the main method?
+        	if(currentMethod.equals("main")) {
+        		// call on the output class's new execution function
+        		rewriter.insertAfter(currentFirstLine, "\n\t\tOutput.newExecution(\""+className+"\");\n");
+        	}
+    		
     		// declare the formal parameters as our Var type
     		String comment2 = "\n\t\t// formal parameters";
     		rewriter.insertAfter(currentFirstLine, comment2);

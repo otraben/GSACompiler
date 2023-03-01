@@ -55,15 +55,19 @@ public class Translator {
         walker.walk((ParseTreeListener)preprocessor, parseTree);
         parsedCode = preprocessor.rewriter.getText();
         className = preprocessor.className;
-        saveFile();
         
-        List<Integer> addedLines = preprocessor.getAddedLines();
-        
+        // create the output folder
         try {
 			Files.createDirectories(Paths.get("src/outputs/"+className+"_Output"));
 		} catch (Exception e) {
 			System.out.println(e);
 		}
+        
+        saveFile();
+        
+        List<Integer> addedLines = preprocessor.getAddedLines();
+        
+        
         
         // re-populate the lexer and the parser using the new pre-processed file
         CharStream inputStream = null;
@@ -93,6 +97,7 @@ public class Translator {
     	// GSA Java file
         try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output"+"/"+className+".java"))){
             out.print(parsedCode);
+            out.close();
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -107,7 +112,7 @@ public class Translator {
 	        		}
 	        		map.println(line);
 	        	}
-	           
+	        	map.close();
 	        } catch (Exception e){
 	            e.printStackTrace();
 	        }
@@ -117,11 +122,12 @@ public class Translator {
     void createTable() {
     	try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output"+"/"+className+".R"))) {
     		// header
-    		out.println("genCFmeansRF_fault_binerss <- function() {\n\nresults <- data.frame(row.names=seq(1,10))\n");
+    		out.println("genCFmeansRF_fault_binerrs <- function() {\n\nresults <- data.frame(row.names=seq(1,10))\n");
     		
     		// variables
     		for(String key : causalMap.keySet()) {
     			out.print("fault_binerrs_" + key + "_treat_df <- data.frame(Y=fault_binerrs_all$Y");
+    			out.print(", " + key + "=fault_binerrs_all$" + key);
     			for(String v : causalMap.get(key)) {
     				out.print(", " + v + "=fault_binerrs_all$" + v);
     			}
@@ -130,6 +136,8 @@ public class Translator {
     		
     		// footer
     		out.println("return(results)\n\n}");
+    		
+    		out.close();
     	}
     	catch (Exception e) {
     		System.out.println(e);

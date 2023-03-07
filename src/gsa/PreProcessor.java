@@ -31,6 +31,18 @@ public class PreProcessor extends JavaBaseListener {
 	// package
 	Token p;
 	
+	// global variables
+	public List<String> globalVars = new ArrayList<>();
+	
+	// these vars are used for the specific case where an if statement has phi.entry vars used within it
+	int loopDepth = 0;
+	int ifConditionDepth = 0;
+	boolean ifStatement = false;
+	boolean literal = false;
+	Token ifStatementToken;
+	String primaryName = "";
+	
+	
 	public PreProcessor(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);   
     }
@@ -90,6 +102,14 @@ public class PreProcessor extends JavaBaseListener {
 			lineIncreases.add(ctx.getStart().getLine() + extraLines);
 			extraLines++;
 		}
+		
+		// add global variables to a list
+		for(VariableDeclaratorContext vd : ctx.variableDeclarators().variableDeclarator()) {
+			String var = vd.variableDeclaratorId().getText();
+			var = var.replaceAll("\\[", "");
+			var = var.replaceAll("\\]", "");
+			globalVars.add(var);
+		}
 	}
 	
 	@Override
@@ -123,8 +143,25 @@ public class PreProcessor extends JavaBaseListener {
 	}
 	
 	@Override
+	public void enterStatement(JavaParser.StatementContext ctx) {
+		if(ctx.FOR()!=null || ctx.WHILE()!=null) {
+			loopDepth++;
+		}
+		else if(ctx.IF()!=null) {
+			ifStatement = true;
+			if(!(ctx.getParent() instanceof StatementContext && ((StatementContext)ctx.getParent()).IF() != null)) {
+				ifStatementToken = ctx.start;
+			}
+		}
+	}
+	
+	@Override
 	public void exitStatement(JavaParser.StatementContext ctx) {
 		
+		if(ctx.FOR()!=null || ctx.WHILE()!=null) {
+			loopDepth--;
+		}
+
 		// tab amount
 		String ws = "";
 		for(int i=0; i<tabAmount+1; i++) {
@@ -287,6 +324,18 @@ public class PreProcessor extends JavaBaseListener {
 	
 	@Override
     public void enterExpression(JavaParser.ExpressionContext ctx) {
+		
+		// array?
+		if(ctx.LBRACK()!=null && ifStatement) {
+			try {
+				primaryName = ctx.expression(0).primary().getText();
+			}
+			catch(Exception e) {
+				// nothing
+			}
+			
+		}
+		
 		// transform all assignment variants into generic ASSIGN statements
 		if( ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
 			ctx.AND_ASSIGN() != null || ctx.OR_ASSIGN() != null || ctx.XOR_ASSIGN() != null || ctx.MOD_ASSIGN() != null || 
@@ -335,4 +384,40 @@ public class PreProcessor extends JavaBaseListener {
 			
 		}
 	}
+	
+	@Override
+	public void enterParExpression(JavaParser.ParExpressionContext ctx) {
+		if(ifStatement) {
+			ifConditionDepth++;
+		}
+	}
+	
+	@Override
+	public void exitParExpression(JavaParser.ParExpressionContext ctx) {
+		if(ifStatement) {
+			ifConditionDepth--;
+			if(ifConditionDepth==0) {
+				ifStatement = false;
+			}
+		}
+	}
+	
+	@Override
+	public void exitPrimary(JavaParser.PrimaryContext ctx) {
+		if(ifStatement && !literal && !primaryName.equals(ctx.getText())) {
+			rewriter.insertBefore(ifStatementToken, ctx.getText() + " = " + ctx.getText() + ";\n");
+			lineIncreases.add(ctx.getStart().getLine() + extraLines);
+			extraLines++;
+		}
+		else if(primaryName.equals(ctx.getText())) {
+			primaryName = "";
+		}
+		literal = false;
+	}
+	
+	@Override
+	public void enterLiteral(JavaParser.LiteralContext ctx) {
+		literal = true;
+	}
+
 }

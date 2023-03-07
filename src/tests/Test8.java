@@ -23,6 +23,10 @@ public class Test8 {
 		
 		y[0] += 5;
 		
+		if(y[c-4] > 0) {
+			y[0] += 5;
+		}
+		
 		System.out.println(y[2] + c);
 	}
 }

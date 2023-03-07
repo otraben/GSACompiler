@@ -28,6 +28,7 @@ public class GSAConverter extends JavaBaseListener {
     int tabAmount = 1;
     List<Integer> extraLines;
     Stack<HashMap<String,Integer>> scope;
+    boolean faultyVersion;
     
     // variable-specific variables
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
@@ -80,13 +81,13 @@ public class GSAConverter extends JavaBaseListener {
 	// do while loops
 	boolean insideDoLoop = false;
 	
-    public GSAConverter(CommonTokenStream tokens, List<Integer> addedLines) {
+    public GSAConverter(CommonTokenStream tokens, List<Integer> addedLines, boolean faulty, List<String> globalVars) {
         rewriter = new TokenStreamRewriter(tokens);
         extraLines = addedLines;
         
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
-        globals = new ArrayList<>();
+        globals = globalVars;
         
         prevVarCounts = new Stack<>();
         
@@ -107,6 +108,8 @@ public class GSAConverter extends JavaBaseListener {
         scope.push(new HashMap<>());
         
         causalMap = new HashMap<>();
+        
+        faultyVersion = faulty;
     }
     
     @Override
@@ -114,6 +117,10 @@ public class GSAConverter extends JavaBaseListener {
     	// the first class name should be the name of the file
     	if(className == "") {
     		className = ctx.Identifier().getText();
+    	}
+    	
+    	if(faultyVersion) {
+    		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
     	}
     }
     
@@ -123,56 +130,15 @@ public class GSAConverter extends JavaBaseListener {
     	if(className == "") {
     		className = ctx.Identifier().getText();
     	}
+    	
+    	if(faultyVersion) {
+    		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
+    	}
     }
     
     @Override
     public void enterClassBody(JavaParser.ClassBodyContext ctx) {
 		classFirstLine = ctx.LBRACE().getSymbol();
-    }
-    
-    @Override
-    public void exitFieldDeclaration(JavaParser.FieldDeclarationContext ctx) {
-    	String var = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText();
-    	globals.add(var);
-    	
-    	// check if this is an array
-    	if(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0) != null || ctx.typeSpec().LBRACK(0) != null) {
-    		
-//    		// get bracket count
-//			int bracketCount = ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK().size();
-//			String brackets = "";
-//			for(int i=0; i<bracketCount; i++) {
-//				brackets += "[]";
-//			}
-//    		
-//    		// delete brackets
-//    		rewriter.replace(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().LBRACK(0).getSymbol(), ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().RBRACK().size()-1).getSymbol(), "");
-//    		
-//    		// add array type
-//    		varTypes.put(var, getType(ctx.typeSpec().getText() + brackets));
-    	}
-//    	else {
-//    		varTypes.put(var, getType(ctx.typeSpec().getText()));
-//    		
-//    		// replace the type with the "Var<>" version
-//        	rewriter.replace(ctx.typeSpec().start, "Var<" + varTypes.get(var) + ">");
-//        	
-//        	// check if this is NOT an assignment statement
-//        	if(ctx.variableDeclarators().variableDeclarator(0).ASSIGN() == null) {
-//        		rewriter.insertAfter(ctx.variableDeclarators().variableDeclarator(0).stop, "_" + varCounts.get(var));
-//        	}
-//        	// if it is an assignment statement
-//        	else {
-//        		// right-side needs to be reformatted
-//        		Token start = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().start;
-//    	    	Token end = ctx.variableDeclarators().variableDeclarator().get(0).variableInitializer().stop;
-//    	    	newVariable(var, start, end);
-//        		
-//        	}
-//    	}
-    	
-    	
-    	
     }
     
     @Override
@@ -182,6 +148,31 @@ public class GSAConverter extends JavaBaseListener {
     		// remove all brackets
 //    		rewriter.replace(ctx.LBRACK(0).getSymbol(), ctx.RBRACK(ctx.RBRACK().size()-1).getSymbol(), "");
     	}
+    }
+    
+    @Override
+    public void enterConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {
+    	currentMethod = ctx.Identifier().getText();
+    	
+    	if(faultyVersion) {
+    		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
+    	}
+    }
+    
+    @Override
+    public void exitConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {
+    	currentMethod = "";
+    }
+    
+    @Override
+    public void enterConstructorBody(JavaParser.ConstructorBodyContext ctx) {
+    	methodFirstLineFound = false;
+    	afterVarDefs = false;
+    }
+    
+    @Override
+    public void exitConstructorBody(JavaParser.ConstructorBodyContext ctx) {
+    	currentFirstLine = null;
     }
     
     @Override
@@ -251,6 +242,7 @@ public class GSAConverter extends JavaBaseListener {
     				scope.peek().put(key, varCounts.get(key));
     				varTypes.put(key, getType(formalParams.get(key)));
     			}
+    			causalMap.put(key + "_" + varCounts.get(key), new ArrayList<>());
     			
         		// add the actual declaration
     			String decl = "\n\t\tVar<" + varTypes.get(key) + "> " + key + "_" + varCounts.get(key) + " = new Var<" + varTypes.get(key) + ">(" + key + ");";
@@ -695,13 +687,21 @@ public class GSAConverter extends JavaBaseListener {
     					beforeNum = -1;
     				}			
     			}
-    			String txt = "Phi.Entry(" + t.getText() + "_" + beforeNum + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
-    			rewriter.replace(t.start,t.stop,txt);
-    			causalVars.add(t.getText() + "_" + beforeNum);
-    			causalVars.add(t.getText() + "_" + (varCounts.get(t.getText())));
-    			if(causalNums.get(t) != null) {
-    				causalMap.put(t.getText() + "_" + causalNums.get(t), causalVars);
+    			
+    			// specific case for multi-dimensional loops
+    			if(beforeNum == varCounts.get(t.getText()) && firstVarFound.size()>0) {
+    				phiEntryVars.peek().put(t, varCounts.get(t.getText()));
     			}
+    			else {
+    				String txt = "Phi.Entry(" + t.getText() + "_" + beforeNum + "," + t.getText() + "_" + (varCounts.get(t.getText())) + ").value";
+        			rewriter.replace(t.start,t.stop,txt);
+        			causalVars.add(t.getText() + "_" + beforeNum);
+        			causalVars.add(t.getText() + "_" + (varCounts.get(t.getText())));
+        			if(causalNums.get(t) != null) {
+        				causalMap.put(t.getText() + "_" + causalNums.get(t), causalVars);
+        			}
+    			}
+ 
     		}
     		
     		// add the phi exit functions
@@ -716,10 +716,22 @@ public class GSAConverter extends JavaBaseListener {
     				}
     			}
     			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
+    				
+    				// remove variable versions if they were declared inside a different scope
+    				String remove = "";
+    				if(firstVarFound.size()>0) {
+    					if(scope.peek().containsKey(v)) {
+    						remove = "\n" + ws + v + "_" + varCounts.get(v) + " = null;";		
+    					}
+    				}
+    				
     				varCounts.put(v, varCounts.get(v) + 1);
     				scope.peek().put(v, varCounts.get(v));
     				String exit = "\n" + ws + v + "_" + varCounts.get(v) + " = Phi.Exit(" + v + "_" + prevVarCount.get(v) + "," + v + "_" + (varCounts.get(v)-1) + ");";
     				rewriter.insertAfter(ctx.stop, exit);
+    				rewriter.insertAfter(ctx.stop, remove);
+    				
+    				
     				
     				// causal map entry
     				List<String> causalVars = new ArrayList<>();
@@ -1030,6 +1042,10 @@ public class GSAConverter extends JavaBaseListener {
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
     			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
     		
+    		}
+    		// inside a while loop BUT this is NOT an assignment statement
+    		else if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText()) && currentAssignee.equals("")) {
+    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		else if(insideIfCondition) {

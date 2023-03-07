@@ -7,14 +7,12 @@ import gsa.Var;
 // tests basic SSA and a basic if/else statement
 public class Test_Faulty {
 	
-	public static Integer flukyInt(int f) {
-		double rand = Math.random();
-		if(rand <= 0.5f) {
-			return f;
+	public static int flukyInt(int i) {
+		double r = Math.random();
+		if(r <= 0.5d) {
+			return i;
 		}
-		else {
-			return f + 2;
-		}
+		return i * 2;
 	}
 	
     public static void main(String[] args) {

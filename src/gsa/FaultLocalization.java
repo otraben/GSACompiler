@@ -1,4 +1,4 @@
-package outputs.Test_Output;
+package gsa;
 
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -8,36 +8,47 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import outputs.Test_Output.Test;
+import outputs.Test_Output.Test_Faulty;
+
 public class FaultLocalization {
 	
-	public static int numberOfExecutions = 100;
+	public int numberOfExecutions = 100;
+	public String outputFilePath;
+	public String outYFilePath;
+	public String causalMapFilePath;
+	public String newoutputFilePath;
 	
-	public static void main(String[] args) {
-		
-		String filePath = "src/outputs/Test_Output/output.txt";
-		
+	public FaultLocalization(String className) {
+		outputFilePath = "src/outputs/"+className+"_Output/output.txt";
+		outYFilePath = "src/outputs/"+className+"_Output/outY.txt";
+		causalMapFilePath = "src/outputs/"+className+"_Output/" + className + "Map.txt";
+		newoutputFilePath = "src/outputs/"+className+"_Output/newoutput.txt";
+	}
+	
+	public void clearFiles() {
 		// clear the output file and outY file
-		try (PrintStream out = new PrintStream(new FileOutputStream(filePath))){
+		try (PrintStream out = new PrintStream(new FileOutputStream(outputFilePath))){
             out.print("");
             out.close();
         } catch (Exception e){
             e.printStackTrace();
         }
-		try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/Test_Output/outY.txt"))){
+		try (PrintStream out = new PrintStream(new FileOutputStream(outYFilePath))){
             out.print("");
             out.close();
         } catch (Exception e){
             e.printStackTrace();
         }
-		
-		// run the non-faulty version of code to get the correct output
-		Test.main(null);
+	}
+	
+	public void run() {
 		
 		// obtain the correct output (turn all numerical values to doubles)
 		Double correctOutput = null;
 
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(filePath));
+			BufferedReader reader = new BufferedReader(new FileReader(outputFilePath));
 			String line = reader.readLine();
 			while(line != null) {
 				if(line.equals("*** CORRECTOUTPUT ***")) {
@@ -52,25 +63,12 @@ public class FaultLocalization {
 			e.printStackTrace();
 		}
 		
-		// clear the output file again
-		try (PrintStream out = new PrintStream(new FileOutputStream(filePath))){
-            out.print("");
-            out.close();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-		
-		// run the faulty version of code
-		for(int i=0; i<numberOfExecutions; i++) {
-			Test_Faulty.main(null);
-		}
-		
 		// create a hash map to keep track of each variable and their corresponding values for each execution
 		HashMap<String,List<Double>> outputs = new HashMap<>();
 		
 		// first, read through the causal map to add all known variables
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader("src/outputs/Test_Output/TestMap.txt"));
+			BufferedReader reader = new BufferedReader(new FileReader(causalMapFilePath));
 			String line = reader.readLine();
 			while(line != null && !line.equals("")) {
 				if(line.contains(",")) {
@@ -88,7 +86,7 @@ public class FaultLocalization {
 		
 		// read through the output file
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(filePath));
+			BufferedReader reader = new BufferedReader(new FileReader(outputFilePath));
 			String line = reader.readLine();
 			// skip first "new execution"
 			line = reader.readLine();
@@ -108,7 +106,7 @@ public class FaultLocalization {
 					line = reader.readLine();
 					if(Double.parseDouble(line) == correctOutput) {
 						// Y = 0
-						try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/Test_Output/outY.txt", true))){
+						try (PrintStream out = new PrintStream(new FileOutputStream(outYFilePath, true))){
 							if(executionCount == 1) {
 								out.print("0 ");
 							}
@@ -123,7 +121,7 @@ public class FaultLocalization {
 					}
 					else {
 						// Y = 1
-						try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/Test_Output/outY.txt", true))){
+						try (PrintStream out = new PrintStream(new FileOutputStream(outYFilePath, true))){
 							if(executionCount == 1) {
 								out.print("1 ");
 							}
@@ -139,7 +137,18 @@ public class FaultLocalization {
 				}
 				// must be a variable-value pair
 				else {
-					outputs.get(line.substring(0,line.indexOf(","))).add(Double.parseDouble(line.substring(line.indexOf(",")+1)));
+					try {
+						if(outputs.get(line.substring(0,line.indexOf(","))).size() == executionCount) {
+							outputs.get(line.substring(0,line.indexOf(","))).set(executionCount-1, Double.parseDouble(line.substring(line.indexOf(",")+1)));
+						}
+						else {
+							outputs.get(line.substring(0,line.indexOf(","))).add(Double.parseDouble(line.substring(line.indexOf(",")+1)));
+						}
+						
+					}
+					catch(Exception e) {
+						// move on
+					}		
 				}
 				line = reader.readLine();
 			}
@@ -155,19 +164,34 @@ public class FaultLocalization {
 		}
 		
 		// create the new output file
-		try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/Test_Output/newoutput.txt"))){
+		try (PrintStream out = new PrintStream(new FileOutputStream(newoutputFilePath))){
 			// create the row for each variable
             for(String v : outputs.keySet()) {
+            	
+            	// check if this variable is ever used
+            	boolean allNull = true;
+            	for(Double o : outputs.get(v)) {
+            		if(o != null) {
+            			allNull = false;
+            			break;
+            		}
+            	}
+            	
             	out.print(String.format("%30s", v));
+            	System.out.println(v + " " + outputs.get(v).size());
             	
             	// add every value
             	int count = 1;
             	for(Double o : outputs.get(v)) {
-            		// skip the first one
-            		if(count != 1) {
+            		// skip the first 2
+            		if(count > 2) {
             			if(o != null) {
 	            			out.print(String.format("%15g", o));
-	            		} else {
+	            		} 
+            			else if(allNull) {
+            				out.print(String.format("%15s", 0));
+            			}
+            			else {
 	            			out.print(String.format("%15s", "NA"));
 	            		}   
             		}

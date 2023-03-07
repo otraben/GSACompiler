@@ -1,5 +1,6 @@
 package tests;
 
+import gsa.Output;
 
 /**
  * Computes FFT's of complex, double precision data where n is an integer power of 2.
@@ -80,6 +81,7 @@ public class FFT {
      * Simple Test routine.
      */
     public static void main(String args[]) {
+    	double o = 0;
         if (args.length == 0) {
             int n = 1024;
             System.out.println("n=" + n + " => RMS Error=" + test(makeRandom(n)));
@@ -87,7 +89,9 @@ public class FFT {
         for (int i = 0; i < args.length; i++) {
             int n = Integer.parseInt(args[i]);
             System.out.println("n=" + n + " => RMS Error=" + test(makeRandom(n)));
+            o = test(makeRandom(n));
         }
+        System.out.println(o);
     }
     /* ______________________________________________________________________ */
 

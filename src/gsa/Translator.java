@@ -13,6 +13,7 @@ import antlr.JavaParser;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,6 +56,7 @@ public class Translator {
         walker.walk((ParseTreeListener)preprocessor, parseTree);
         parsedCode = preprocessor.rewriter.getText();
         className = preprocessor.className;
+        List<String> globalVars = preprocessor.globalVars;
         
         // create the output folder
         try {
@@ -66,9 +68,7 @@ public class Translator {
         saveFile();
         
         List<Integer> addedLines = preprocessor.getAddedLines();
-        
-        
-        
+
         // re-populate the lexer and the parser using the new pre-processed file
         CharStream inputStream = null;
         try {
@@ -83,13 +83,26 @@ public class Translator {
         parseTree = parser.compilationUnit();
         
         // GSA pass
-        GSAConverter listener = new GSAConverter(tokens, addedLines);	// object-oriented version
+        GSAConverter listener = new GSAConverter(tokens, addedLines, false, globalVars);	// object-oriented version
         walker.walk((ParseTreeListener)listener, parseTree);
         parsedCode = listener.rewriter.getText();
         causalMap = listener.causalMap;
-
         saveFile(); 
+        
+        // fault version pass
+        GSAConverter faultListener = new GSAConverter(tokens, addedLines, true, globalVars);
+        walker.walk((ParseTreeListener)faultListener, parseTree);
+        parsedCode = faultListener.rewriter.getText();
+        saveFaultyFile();
+
         createTable();
+        try {
+        	getRFile();
+        }
+        catch (Exception e) {
+        	System.out.println(e);
+        }
+        createFaultLocalizationFile();
     }
     
     void saveFile(){
@@ -142,5 +155,44 @@ public class Translator {
     	catch (Exception e) {
     		System.out.println(e);
     	}
+    }
+    
+    void getRFile() throws IOException {
+    	File source = new File("src/gsa/RFCIcode.R");
+    	File dest = new File("src/outputs/"+className+"_Output"+"/RFCIcode.R");
+    	if(!dest.exists()) {
+    		Files.copy(source.toPath(), dest.toPath());
+    	}
+    }
+    
+    void saveFaultyFile(){
+        try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output"+"/"+className+"_Faulty.java"))){
+            out.print(parsedCode);
+            out.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
+    void createFaultLocalizationFile() {
+    	try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output"+"/FaultLocalizationTester.java"))){
+            out.println("package outputs." + className + "_Output;\n");
+            out.println("import gsa.FaultLocalization;\n");
+            out.println("public class FaultLocalizationTester {\n");
+            out.println("\tpublic static void main(String[] args) {");
+            out.println("\t\tFaultLocalization fl = new FaultLocalization(\"" + className + "\");");
+            out.println("\t\tfl.clearFiles();");
+            out.println("\t\tString[] a = {};");
+            out.println("\t\t" + className + ".main(a);");
+            out.println("\t\tfor(int i=0; i<fl.numberOfExecutions; i++) {");
+            out.println("\t\t\t" + className + "_Faulty.main(a);");
+            out.println("\t\t}");
+            out.println("\t\tfl.run();");
+            out.println("\t}");
+            out.println("}");
+            out.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

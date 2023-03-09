@@ -34,10 +34,16 @@ public class GSAConverter extends JavaBaseListener {
     public Map<String, Integer> varCounts;	// keeps track of the amount of each variable
 	public Map<String, String> varTypes;	// keeps track of the type of each variable
 	public List<String> globals;
+	public List<String> arrays;
 	
 	// class-specific variables
 	Token classFirstLine;
 	String className = "";
+	int classCounter = 0;
+	
+	// constructor
+	boolean insideConstructor = false;
+	String constructorLine = "";
 	
 	// method-specific variables
 	boolean methodFirstLineFound = false;
@@ -69,11 +75,14 @@ public class GSAConverter extends JavaBaseListener {
 	Stack<Integer> ifChainsLastDefinedVarsIndex;
 	Stack<JavaParser.StatementContext> finalIfBlocks;
 	Stack<HashMap<String, Integer>> beforeIfChain; 		// same as prevVarCounts, but specifically used for if statement conditions
+	int ifDepth = 0;
 	
 	// while statement variables
 	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryCausalNums;
+	Stack<HashMap<String,Integer>> whileIfVars;
+	String whileOrIf = "";
 	
 	// causal map
 	public HashMap<String, List<String>> causalMap;
@@ -88,6 +97,7 @@ public class GSAConverter extends JavaBaseListener {
         varCounts = new HashMap<>();
         varTypes = new HashMap<>();
         globals = globalVars;
+        arrays = new ArrayList<>();
         
         prevVarCounts = new Stack<>();
         
@@ -103,6 +113,7 @@ public class GSAConverter extends JavaBaseListener {
         firstVarFound = new Stack<>();
         phiEntryVars = new Stack<>();
         phiEntryCausalNums = new Stack<>();
+        whileIfVars = new Stack<>();
         
         scope = new Stack<>();
         scope.push(new HashMap<>());
@@ -118,8 +129,9 @@ public class GSAConverter extends JavaBaseListener {
     	if(className == "") {
     		className = ctx.Identifier().getText();
     	}
+    	classCounter++;
     	
-    	if(faultyVersion) {
+    	if(faultyVersion && classCounter == 1) {
     		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
     	}
     }
@@ -128,8 +140,9 @@ public class GSAConverter extends JavaBaseListener {
     public void enterInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
     	// the first interface name should be the name of the file
     	if(className == "") {
-    		className = ctx.Identifier().getText();
+    		className = ctx.Identifier().getText();	
     	}
+    	classCounter++;
     	
     	if(faultyVersion) {
     		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
@@ -142,26 +155,20 @@ public class GSAConverter extends JavaBaseListener {
     }
     
     @Override
-    public void exitTypeSpec(JavaParser.TypeSpecContext ctx) {
-    	// array
-    	if(currentMethod.equals("") && ctx.LBRACK(0) != null) {
-    		// remove all brackets
-//    		rewriter.replace(ctx.LBRACK(0).getSymbol(), ctx.RBRACK(ctx.RBRACK().size()-1).getSymbol(), "");
-    	}
-    }
-    
-    @Override
     public void enterConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {
     	currentMethod = ctx.Identifier().getText();
+    	insideConstructor = true;
     	
-    	if(faultyVersion) {
+    	if(faultyVersion && classCounter == 1) {
     		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
     	}
     }
     
     @Override
-    public void exitConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {
+    public void exitConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {	
     	currentMethod = "";
+    	insideConstructor = false;
+    	constructorLine = "";
     }
     
     @Override
@@ -172,6 +179,9 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void exitConstructorBody(JavaParser.ConstructorBodyContext ctx) {
+    	if(!constructorLine.equals("")) {
+    		rewriter.replace(currentFirstLine, "{\n\t\t" + constructorLine + ";");
+    	}
     	currentFirstLine = null;
     }
     
@@ -195,6 +205,9 @@ public class GSAConverter extends JavaBaseListener {
     	// make sure it is not an array
     	if(ctx.typeSpec().LBRACK(0) == null) {
     		formalParams.put(ctx.variableDeclaratorId().getText(), ctx.typeSpec().getText());
+    	}
+    	else {
+    		arrays.add(ctx.variableDeclaratorId().getText());
     	}
     	
     	
@@ -222,12 +235,6 @@ public class GSAConverter extends JavaBaseListener {
     	if(!methodFirstLineFound) {
     		currentFirstLine = ctx.LBRACE().getSymbol();
     		methodFirstLineFound = true;
-    		
-    		// is this the main method?
-        	if(currentMethod.equals("main")) {
-        		// call on the output class's new execution function
-        		rewriter.insertAfter(currentFirstLine, "\n\t\tOutput.newExecution(\""+className+"\");\n");
-        	}
     		
     		// declare the formal parameters as our Var type
     		String comment2 = "\n\t\t// formal parameters";
@@ -287,7 +294,9 @@ public class GSAConverter extends JavaBaseListener {
     public void enterStatement(JavaParser.StatementContext ctx) {
     	
     	if(ctx.IF() != null) {
+    		ifDepth++;
     		insideIfCondition = true;
+    		whileOrIf = "if";
     		
     		// get potential parent from if chain length
     		RuleContext parent = ctx.parent;
@@ -379,7 +388,7 @@ public class GSAConverter extends JavaBaseListener {
     		}
     	}
     	else if(ctx.WHILE() != null) {
-    		
+    		whileOrIf = "while";
     		// check for DO WHILE loops
     		if(ctx.DO() != null) {
     			insideDoLoop = true;
@@ -393,6 +402,7 @@ public class GSAConverter extends JavaBaseListener {
     		firstVarFound.push(new ArrayList<>());
     		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
     		phiEntryCausalNums.push(new HashMap<JavaParser.PrimaryContext,Integer>());
+    		whileIfVars.push(new HashMap<>());
     		
     		// save the var counts prior to this loop
     		HashMap<String,Integer> preVarCounts = new HashMap<>();
@@ -405,8 +415,8 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void exitStatement(JavaParser.StatementContext ctx) {
     	if(ctx.IF() != null) {
-
-    		
+    		ifDepth--;
+    		whileOrIf = "";
     	}
     	// check if this is an if statement block that needs to gather all of its last variable definitions
     	else if(!nextIfBlocks.isEmpty() && nextIfBlocks.peek().contains(ctx)) {
@@ -454,7 +464,18 @@ public class GSAConverter extends JavaBaseListener {
         			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
         			
         			for(String v : varCounts.keySet()) {
-        				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && scope.peek().containsKey(v)) {
+        				boolean varInScope = false;
+        				Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+        				
+            			while(!tempScope.isEmpty()) {
+  
+            				if(tempScope.peek().containsKey(v)) {
+            					varInScope = true;
+            					break;
+            				}
+            				tempScope.pop();
+            			}
+        				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && varInScope) {
             				varCounts.put(v, varCounts.get(v) + 1);  
             				scope.peek().put(v, varCounts.get(v));
             				
@@ -556,7 +577,18 @@ public class GSAConverter extends JavaBaseListener {
     			HashMap<String,Integer> definedPriorToIfChain = prevVarCounts.pop();
     			List<Pair<Token,Token>> conditions = ifConditionIntervals.pop();
     			for(String v : varCounts.keySet()) {
-    				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && scope.peek().containsKey(v)) {
+    				boolean varInScope = false;
+    				Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    				
+        			while(!tempScope.isEmpty()) {
+
+        				if(tempScope.peek().containsKey(v)) {
+        					varInScope = true;
+        					break;
+        				}
+        				tempScope.pop();
+        			}
+    				if(definedPriorToIfChain.containsKey(v) && !varCounts.get(v).equals(definedPriorToIfChain.get(v)) && varInScope) {
         				varCounts.put(v, varCounts.get(v) + 1);  
         				scope.peek().put(v, varCounts.get(v));
         				
@@ -661,12 +693,13 @@ public class GSAConverter extends JavaBaseListener {
     		
     	}
     	else if(ctx.WHILE() != null) {
-    		
+    		whileOrIf = "";
     		// pop off all stack elements for this loop
     		List<String> varsFound = firstVarFound.pop();
     		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
     		HashMap<JavaParser.PrimaryContext,Integer> causalNums = phiEntryCausalNums.pop();
     		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
+    		HashMap<String,Integer> ifVars = whileIfVars.pop();
     		
     		// tab amount
 			String ws = "";
@@ -686,6 +719,15 @@ public class GSAConverter extends JavaBaseListener {
     				else {
     					beforeNum = -1;
     				}			
+    			}
+    			
+    			if(ifVars.containsKey(t.getText())) {
+    				try {
+    					beforeNum = ifVars.get(t.getText());
+    				}
+    				catch(Exception e) {
+    					// skip
+    				}		
     			}
     			
     			// specific case for multi-dimensional loops
@@ -778,6 +820,9 @@ public class GSAConverter extends JavaBaseListener {
         		firstVarFound.peek().add(var);
         	}
     	}
+    	else {
+    		arrays.add(var);
+    	}
 	
     }
     
@@ -813,8 +858,16 @@ public class GSAConverter extends JavaBaseListener {
 				rewriter.insertAfter(ctx.stop, ";\n" + ws + record.substring(0, record.length()));
 				
 				// add variable to if statement list of most recent variable definitions
-	    		if(ifChainsLastDefinedVars.size() > 0) {	
-	    			ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    		if(ifChainsLastDefinedVars.size() > 0) {
+	    			try {
+	    				ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    			}
+	    			catch(Exception e) {
+	    				int i = ifChainsLastDefinedVarsIndex.peek();
+	    				ifChainsLastDefinedVarsIndex.pop();
+	    				ifChainsLastDefinedVarsIndex.push(i-1);
+	    				ifChainsLastDefinedVars.peek().get(ifChainsLastDefinedVarsIndex.peek()).put(var, varCounts.get(var));
+	    			}
 	    		}
 			}
 			// declaration with no assign can be erased
@@ -910,7 +963,7 @@ public class GSAConverter extends JavaBaseListener {
     		currentAssigneeNum = -1;
     		
     		// check if it is a global variable
-    		if(!globals.contains(var) || varCounts.get(var) != null) {
+    		if((!globals.contains(var) && !arrays.contains(var) && !var.equals("this") && !var.equals("super")) || varCounts.get(var) != null) {
     		
 	    		if(varCounts.get(var) != null) {
 	    			varCounts.put(var, varCounts.get(var)+1);	
@@ -931,8 +984,7 @@ public class GSAConverter extends JavaBaseListener {
     		else {
     			assignedVariableIndexed = true;
     		}
-    	}
-    	
+    	}	
     }
     
     @Override
@@ -943,7 +995,7 @@ public class GSAConverter extends JavaBaseListener {
     		String var = ctx.start.getText();
     		
     		// check if it is a global variable
-    		if(!globals.contains(var) || varCounts.get(var) != null) {
+    		if((!globals.contains(var) && !arrays.contains(var) && !var.equals("this") && !var.equals("super")) || varCounts.get(var) != null) {
     		
 	    		// create the variable object (MUST DO AT EXIT SO PARENTHESE IS PLACED AT END)
 	        	Token start = ctx.expression().get(1).start;
@@ -976,6 +1028,16 @@ public class GSAConverter extends JavaBaseListener {
 	    			firstVarFound.peek().add(var);
 	    		}
     		}
+	
+    	}
+    	// check if the constructor has a constructor call within it
+    	try {
+    		if(insideConstructor && ctx.LPAREN() != null && (ctx.expression(0).primary().getText().equals("this") || ctx.expression(0).primary().getText().equals("super"))) {
+	    		constructorLine = ctx.getText();
+	    		rewriter.delete(ctx.start, ctx.stop);
+	    	}
+    	} catch (Exception e) {
+    		// skip
     	}
     }
     
@@ -1018,12 +1080,16 @@ public class GSAConverter extends JavaBaseListener {
     
     @Override
     public void enterPrimary(JavaParser.PrimaryContext ctx) {
-
+    	
     	// variables that are just now being declared have already had their index added
-    	if(varCounts.containsKey(ctx.getText())) {
+    	if(varCounts.containsKey(ctx.getText()) && !globals.contains(ctx.getText()) && !arrays.contains(ctx.getText()) && !ctx.getText().equals("this") && !ctx.getText().equals("super")) {
     		if(insideWhileCondition) {
     			// we know this condition variable will need to be replaced with a phi entry function (this will be done later)
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+    			
+    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    			}
     			
     		}
     		// inside a while loop AND left/right side variables are equivalent
@@ -1034,6 +1100,10 @@ public class GSAConverter extends JavaBaseListener {
     			
     			// add this var to the list
     			firstVarFound.peek().add(ctx.getText());
+    			
+    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    			}
     		
     		}
     		// inside a while loop AND left/right side variables are NOT equivalent
@@ -1041,11 +1111,19 @@ public class GSAConverter extends JavaBaseListener {
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
     			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
+    			
+    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    			}
     		
     		}
     		// inside a while loop BUT this is NOT an assignment statement
     		else if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText()) && currentAssignee.equals("")) {
     			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+
+    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    			}
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		else if(insideIfCondition) {
@@ -1109,12 +1187,12 @@ public class GSAConverter extends JavaBaseListener {
     	}
     }
     
-    // ARRAYS
+    // Constructors
     @Override
     public void enterCreatedName(JavaParser.CreatedNameContext ctx) {
-//    	if(ctx.primitiveType() != null) {
-//    		rewriter.replace(ctx.primitiveType().start, getType(ctx.primitiveType().getText()));
-//    	}
+    	if(ctx.getText().equals(className) && faultyVersion) {
+    		rewriter.insertAfter(ctx.stop, "_Faulty");
+    	}
     }
     
     /* HELPERS */
@@ -1126,6 +1204,10 @@ public class GSAConverter extends JavaBaseListener {
     	while(t.contains("[]")) {
     		brackets += "[]";
     		t = t.substring(0,t.lastIndexOf("[]"));
+    	}
+    	
+    	if(faultyVersion && t.equals(className)) {
+    		return className + "_Faulty";
     	}
     	
     	switch(t) {
@@ -1156,8 +1238,8 @@ public class GSAConverter extends JavaBaseListener {
     	if(varTypes.get(var) != null && varTypes.get(var).equals("Double")) {
     		cast = "(double)";
     	}
-    	String before = "new Var<" + varTypes.get(var) + ">(" + cast;
-    	String after = ")";
+    	String before = "new Var<" + varTypes.get(var) + ">(" + cast + "(";
+    	String after = "))";
     	rewriter.insertBefore(start, before);
     	rewriter.insertAfter(end, after);
     }

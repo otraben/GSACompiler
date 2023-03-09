@@ -47,7 +47,18 @@ public class Output {
 	            e.printStackTrace();
 	        }
 		}
+		System.out.println(value);
 		
+	}
+	
+	// in case a fault causes a program to crash
+	public static void programFail(String className) {
+		try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output/output.txt", true))){
+            out.println("*** OUTPUT ***\nNA");
+            out.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
 	}
 	
 }

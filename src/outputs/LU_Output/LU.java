@@ -682,6 +682,7 @@ if (ii_4.value == 0)
 		}
 		i_23 = Phi.Exit(i_21,i_22);
 		Output.record("LU", "main", 276, "i_23", i_23.value);
+		Output.recordProgramOutput("LU", getlu[i_23.value-1][j_24.value-1], false);
 
         System.out.println("\n\n\n");
 

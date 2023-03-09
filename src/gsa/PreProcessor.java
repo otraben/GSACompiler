@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
@@ -13,8 +14,10 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import antlr.JavaBaseListener;
 import antlr.JavaParser;
+import antlr.JavaParser.BlockStatementContext;
 import antlr.JavaParser.ExpressionContext;
 import antlr.JavaParser.StatementContext;
+import antlr.JavaParser.SwitchBlockStatementGroupContext;
 import antlr.JavaParser.VariableDeclaratorContext;
 
 public class PreProcessor extends JavaBaseListener {
@@ -28,11 +31,19 @@ public class PreProcessor extends JavaBaseListener {
 	// foreach loops
 	boolean foreachLoop = false;
 	
+	// switch statements
+	boolean insideSwitch = false;
+	List<Boolean> breakPresent = new ArrayList<>();
+	int switchIndex = -1;
+	
 	// package
 	Token p;
 	
 	// global variables
 	public List<String> globalVars = new ArrayList<>();
+	
+	// local variables
+	public List<String> vars = new ArrayList<>();
 	
 	// these vars are used for the specific case where an if statement has phi.entry vars used within it
 	int loopDepth = 0;
@@ -153,6 +164,15 @@ public class PreProcessor extends JavaBaseListener {
 				ifStatementToken = ctx.start;
 			}
 		}
+		else if(ctx.SWITCH() != null) {
+			breakPresent.clear();
+			insideSwitch = true;
+			switchIndex = -1;
+		}
+		else if(ctx.BREAK() != null && insideSwitch) {
+			breakPresent.add(switchIndex, true);
+			rewriter.delete(ctx.BREAK().getSymbol());
+		}
 	}
 	
 	@Override
@@ -258,9 +278,13 @@ public class PreProcessor extends JavaBaseListener {
 			    		// get variable
 			    		String var = exp.start.getText();
 			    		
+			    		if(var.equals(op.getText())) {
+			    			var = exp.stop.getText();
+			    		}
+			    		
 			    		// transform it into a regular ASSIGN expression
 			    		expText = exp.getText();
-			    		expText = expText.substring(0,expText.indexOf(op.getText())) + " = " + var + " " + op.getText().substring(1) + " 1";
+			    		expText = var + " = " + var + " " + op.getText().substring(1) + " 1";
 					}
 				
 				String iteration = "\t" + expText + ";\n" + ws;
@@ -282,7 +306,61 @@ public class PreProcessor extends JavaBaseListener {
 		else if(ctx.FOR() != null) {
 			foreachLoop = false;
 		}
+		else if(ctx.SWITCH() != null) {
+			String exp = ctx.parExpression().getText();
+			
+			// delete the switch statement
+			rewriter.delete(ctx.start, ctx.LBRACE().getSymbol());
+			rewriter.delete(ctx.RBRACE().getSymbol());
+			
+			// change all cases into if statements
+			int i = 0;
+			for(SwitchBlockStatementGroupContext c : ctx.switchBlockStatementGroup()) {
+				
+				// remove existing braces
+				try {
+					if(c.blockStatement(0).statement().block().LBRACE() != null) {
+						rewriter.delete(c.blockStatement(0).statement().block().LBRACE().getSymbol());
+						rewriter.delete(c.blockStatement(0).statement().block().RBRACE().getSymbol());
+					}
+				}
+				catch(Exception e) {
+					// skip
+				}
+				
+				
+				// cases
+				try {
+					String exp2 = c.switchLabel(0).constantExpression().getText();
+					if(i == 0 || !breakPresent.get(i-1)) {
+						rewriter.replace(c.switchLabel(0).start, c.switchLabel(0).stop, "if (" + exp + ".equals(" + exp2 + ")) {\n");
+						rewriter.insertAfter(c.stop, "}");
+					}
+					else {
+						rewriter.replace(c.switchLabel(0).start, c.switchLabel(0).stop, "else if (" + exp + ".equals(" + exp2 + ")) {\n");
+						rewriter.insertAfter(c.stop, "}");
+					}
+				} 
+				// default case
+				catch(Exception e) {
+					if(i == 0) {
+						rewriter.delete(c.switchLabel(0).start, c.switchLabel(0).stop);
+					}
+					else {
+						rewriter.replace(c.switchLabel(0).start, c.switchLabel(0).stop, "else {\n");
+						rewriter.insertAfter(c.stop, "}");
+					}
+					
+				}	
+				i++;
+			}
+		}
 		
+	}
+	
+	@Override
+	public void enterSwitchBlockStatementGroup(JavaParser.SwitchBlockStatementGroupContext ctx) {
+		switchIndex++;
 	}
 	
 	@Override
@@ -312,8 +390,12 @@ public class PreProcessor extends JavaBaseListener {
 		
 		for(VariableDeclaratorContext v : ctx.variableDeclarators().variableDeclarator()) {
 			rewriter.insertAfter(v.variableDeclaratorId().stop, brackets);
+			
+			// add each variable to the local vars list
+			vars.add(v.variableDeclaratorId().getText());
 		}
-		
+
+		vars.add(ctx.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText());
 		for(TerminalNode comma : ctx.variableDeclarators().COMMA()) {
 			// create a new line for each variable declared in the same line
 			rewriter.replace(comma.getSymbol(), ";\n" + ws + type + " ");
@@ -337,12 +419,13 @@ public class PreProcessor extends JavaBaseListener {
 		}
 		
 		// transform all assignment variants into generic ASSIGN statements
-		if( ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
+		if( ctx.ASSIGN() != null || ctx.ADD_ASSIGN() != null || ctx.SUB_ASSIGN() != null || ctx.MUL_ASSIGN() != null || ctx.DIV_ASSIGN() != null || 
 			ctx.AND_ASSIGN() != null || ctx.OR_ASSIGN() != null || ctx.XOR_ASSIGN() != null || ctx.MOD_ASSIGN() != null || 
     		ctx.LSHIFT_ASSIGN() != null || ctx.RSHIFT_ASSIGN() != null || ctx.URSHIFT_ASSIGN() != null) {
 			
 			// get operator
-    		Token op = 	ctx.ADD_ASSIGN() != null ? ctx.ADD_ASSIGN().getSymbol() : 
+    		Token op = 	ctx.ASSIGN() != null ? ctx.ASSIGN().getSymbol() : 
+    			ctx.ADD_ASSIGN() != null ? ctx.ADD_ASSIGN().getSymbol() : 
 				ctx.SUB_ASSIGN() != null ? ctx.SUB_ASSIGN().getSymbol() :
 				ctx.MUL_ASSIGN() != null ? ctx.MUL_ASSIGN().getSymbol() :
 				ctx.DIV_ASSIGN() != null ? ctx.DIV_ASSIGN().getSymbol() :
@@ -363,9 +446,47 @@ public class PreProcessor extends JavaBaseListener {
     			var = ctx.expression(0).getText();
     		}
     		
-    		// transform it into a regular ASSIGN expression
-    		rewriter.insertAfter(op, " " + var + " " + op.getText().replaceAll("=", ""));
-    		rewriter.replace(op, "=");
+    		// check to see if this is a multi-assignment line 
+    		ExpressionContext ctx2 = ctx.expression().get(1);
+    		//System.out.println(ctx2.getText());
+    		if(ctx2.ASSIGN()==null && ctx.ASSIGN()==null) {
+    			// transform it into a regular ASSIGN expression
+    			rewriter.insertAfter(op, " " + var + " " + op.getText().replaceAll("=", ""));
+    			rewriter.replace(op, "=");
+    		}
+    		else if(ctx2.ASSIGN()!=null) {
+    			List<String> assignOrder = new ArrayList<>();
+    			assignOrder.add(var);
+	    		while(ctx2.ASSIGN() != null || ctx2.ADD_ASSIGN() != null || ctx2.SUB_ASSIGN() != null || ctx2.MUL_ASSIGN() != null || ctx2.DIV_ASSIGN() != null || 
+	    				ctx2.AND_ASSIGN() != null || ctx2.OR_ASSIGN() != null || ctx2.XOR_ASSIGN() != null || ctx2.MOD_ASSIGN() != null || 
+	    	    		ctx2.LSHIFT_ASSIGN() != null || ctx2.RSHIFT_ASSIGN() != null || ctx2.URSHIFT_ASSIGN() != null) {
+	    			
+	    			assignOrder.add(ctx2.start.getText());
+	    			
+	    			ctx2 = ctx2.expression(1);
+	    		}
+	    		assignOrder.add(ctx2.getText());
+	    		
+	    		// tab amount
+	    		String ws = "";
+	    		for(int i=0; i<tabAmount+1; i++) {
+	    			ws += '\t';
+	    		}
+	    		
+	    		String multiline = assignOrder.get(assignOrder.size()-2) + " = " + assignOrder.get(assignOrder.size()-1);
+	    		for(int i=assignOrder.size()-2; i>0; i--) {
+	    			multiline += ";\n" + ws + assignOrder.get(i-1) + " = " + assignOrder.get(i);
+	    			lineIncreases.add(ctx.getStart().getLine() + extraLines);
+					extraLines++;
+	    		}
+
+	    		rewriter.replace(ctx.start, ctx.stop, multiline);
+	    				
+    		}
+    		
+    		
+    		
+    		
 			
 		}
 		// transform decrement and increment statements into ASSIGN statements
@@ -404,7 +525,7 @@ public class PreProcessor extends JavaBaseListener {
 	
 	@Override
 	public void exitPrimary(JavaParser.PrimaryContext ctx) {
-		if(ifStatement && !literal && !primaryName.equals(ctx.getText())) {
+		if(ifStatement && !literal && !primaryName.equals(ctx.getText()) && !ctx.getText().equals("Math") && !ctx.getText().equals("this") && !ctx.getText().equals("super") && vars.contains(ctx.getText())) {
 			rewriter.insertBefore(ifStatementToken, ctx.getText() + " = " + ctx.getText() + ";\n");
 			lineIncreases.add(ctx.getStart().getLine() + extraLines);
 			extraLines++;

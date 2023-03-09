@@ -1,0 +1,1224 @@
+*** new execution ***
+X_0,Jama.Matrix@2096442d
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** CORRECTOUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@9f70c54
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@12843fce
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@3dd3bcd
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@97e1986
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@26f67b76
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@153f5a29
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7f560810
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@69d9c55
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@13a57a3b
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7ca48474
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@337d0578
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@59e84876
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@61a485d2
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@39fb3ab6
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6276ae34
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7946e1f4
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@3c09711b
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5cc7c2a6
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@b97c004
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4590c9c3
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@32e6e9c3
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5056dfcb
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6574b225
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@2669b199
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@2344fc66
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@458ad742
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5afa04c
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6ea12c19
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6a024a67
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7921b0a2
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@174d20a
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@66d2e7d9
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@1efbd816
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6a2bcfcb
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4de8b406
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@3c756e4d
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7c0e2abd
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@48eff760
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@402f32ff
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@573f2bb1
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5ae9a829
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6d8a00e3
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@548b7f67
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7ac7a4e4
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6d78f375
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@50c87b21
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5f375618
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@1810399e
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@32d992b2
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@215be6bb
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4439f31e
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5dfcfece
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@23ceabc1
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@5d5eef3d
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@56f4468b
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6cc4c815
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@3a82f6ef
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@100fc185
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@643b1d11
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@2ef5e5e3
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@36d4b5c
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6d00a15d
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@51efea79
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5034c75a
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@396a51ab
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@51081592
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7f9a81e8
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@9629756
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@62ee68d8
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@735b5592
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@58651fd0
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4520ebad
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5419f379
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7dc7cbad
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@d2cc05a
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4f933fd1
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@548a9f61
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@1753acfe
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7c16905e
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@2a2d45ba
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@2a5ca609
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@20e2cbe0
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@68be2bc2
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@28feb3fa
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@675d3402
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@51565ec2
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@482f8f11
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@1593948d
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@1b604f19
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@7823a2f9
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4cc0edeb
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@457e2f02
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@5c7fa833
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@39aeed2f
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@724af044
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@4678c730
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@6767c1fc
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@29ee9faa
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838
+*** new execution ***
+X_0,Jama.Matrix@c038203
+i_14,0
+j_7,0
+j_8,0
+i_15,5
+*** OUTPUT ***
+NA
+*** new execution ***
+X_0,Jama.Matrix@cc285f4
+i_14,0
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,1
+j_7,0
+j_8,0
+i_15,0
+j_9,1
+j_8,1
+i_15,0
+j_9,2
+i_16,0
+j_10,2
+i_17,2
+i_18,2
+*** OUTPUT ***
+1.316227766016838

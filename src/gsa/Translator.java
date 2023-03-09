@@ -178,14 +178,21 @@ public class Translator {
     	try (PrintStream out = new PrintStream(new FileOutputStream("src/outputs/"+className+"_Output"+"/FaultLocalizationTester.java"))){
             out.println("package outputs." + className + "_Output;\n");
             out.println("import gsa.FaultLocalization;\n");
+            out.println("import gsa.Output;");
             out.println("public class FaultLocalizationTester {\n");
             out.println("\tpublic static void main(String[] args) {");
             out.println("\t\tFaultLocalization fl = new FaultLocalization(\"" + className + "\");");
             out.println("\t\tfl.clearFiles();");
             out.println("\t\tString[] a = {};");
+            out.println("\t\tOutput.newExecution(\"" + className + "\");");
             out.println("\t\t" + className + ".main(a);");
             out.println("\t\tfor(int i=0; i<fl.numberOfExecutions; i++) {");
-            out.println("\t\t\t" + className + "_Faulty.main(a);");
+            out.println("\t\t\ttry {");
+            out.println("\t\t\t\tOutput.newExecution(\"" + className + "\");");
+            out.println("\t\t\t\t" + className + "_Faulty.main(a);");
+            out.println("\t\t\t} catch(Exception e) {");
+            out.println("\t\t\t\tOutput.programFail(\"" + className + "\");");
+            out.println("\t\t\t}");
             out.println("\t\t}");
             out.println("\t\tfl.run();");
             out.println("\t}");

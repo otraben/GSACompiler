@@ -1,0 +1,30 @@
+t1_2, t1_0, t1_1
+b_0
+normalization_0
+a_0
+c_0
+f_0
+t1_1, t1_0, t1_1
+i_1, i_0, i_1
+t1_0, n_3
+i_0, i_0, i_1
+i_3
+i_2, i_0, i_1
+n_0
+i_5, i_3, i_4
+i_4, i_3, i_4
+n_2, n_1
+n_1
+type_1
+n_3, n_3, n_3
+type_0
+s1_2, s2_0
+s_0
+s2_0
+s1_1, s2_0
+s1_3, s1_1, s1_2
+min_0
+max_0
+transformer_0
+transformer_1
+s1_0

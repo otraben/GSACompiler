@@ -1,4 +1,5 @@
 package outputs.LU_Output;
+import gsa.Fluky;
 import gsa.Output;
 import gsa.Phi;
 import gsa.Var;
@@ -468,7 +469,7 @@ if (j_13.value < minMN_1.value - 1) {
 				while(Phi.Entry(ii_0,ii_1).value < Phi.Entry(M_4,M_4).value) {
                     double Aii[] = A[Phi.Entry(ii_0,ii_1).value];
                     double Aj[] = A[Phi.Entry(j_13,j_14).value];
-                    AiiJ_0 = new Var<Double>((double)Aii[Phi.Entry(j_13,j_14).value]);
+                    AiiJ_0 = new Var<Double>(Fluky.flukyDouble((double)Aii[Phi.Entry(j_13,j_14).value], 0.5));
 					Output.record("LU", "factor", 216, "AiiJ_0", AiiJ_0.value);
                     jj_0 = new Var<Integer>(Phi.Entry(j_13,j_14).value + 1);
 					Output.record("LU", "factor", 217, "jj_0", jj_0.value);
@@ -642,7 +643,7 @@ if (ii_4.value == 0)
 		// formal parameters
 
 		// all variables are declared to null
-		Var<LU> lu_0 = null;
+		Var<LU_Faulty> lu_0 = null;
 		Var<Integer> i_21 = null;
 		Var<Integer> j_22 = null;
 		Var<Integer> j_23 = null;
@@ -659,7 +660,7 @@ if (ii_4.value == 0)
 		/* PROGRAM STARTS */
 		double temp[][] = {{1, 2, 3}, {2, 5, 7}, {3, 5, 3}};
 //        double[][] temp = {{4, 3}, {6, 3}};
-        lu_0 = new Var<LU>(new LU(temp));
+        lu_0 = new Var<LU_Faulty>(new LU_Faulty(temp));
 		Output.record("LU", "main", 272, "lu_0", lu_0.value);
 
         double getlu[][] = lu_0.value.getLU();
@@ -682,6 +683,8 @@ if (ii_4.value == 0)
 		}
 		i_23 = Phi.Exit(i_21,i_22);
 		Output.record("LU", "main", 276, "i_23", i_23.value);
+		Output.recordProgramOutput("LU", getlu[i_23.value-1][j_24.value-1], true);
+		System.out.println(getlu[i_23.value-1][j_24.value-1]);
 
         System.out.println("\n\n\n");
 

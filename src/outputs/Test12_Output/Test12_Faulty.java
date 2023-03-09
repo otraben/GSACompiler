@@ -7,67 +7,70 @@ import gsa.Var;
 public class Test12_Faulty {
 	
 	public static void main(String[] args) {
-		Output.newExecution("Test12");
-
 		// formal parameters
 
 		// all variables are declared to null
-		Var<Integer> count_0 = null;
+		Var<Integer> x_0 = null;
 		Var<Integer> i_0 = null;
-		Var<Integer> other_0 = null;
-		Var<Integer> j_0 = null;
-		Var<Integer> count_1 = null;
-		Var<Integer> other_1 = null;
-		Var<Integer> count_2 = null;
-		Var<Integer> j_1 = null;
-		Var<Integer> other_2 = null;
-		Var<Integer> count_3 = null;
-		Var<Integer> j_2 = null;
 		Var<Integer> i_1 = null;
-		Var<Integer> count_4 = null;
+		Var<Integer> x_1 = null;
 		Var<Integer> i_2 = null;
-		
+		Var<Integer> x_2 = null;
+		Var<Integer> x_3 = null;
+		Var<Integer> x_4 = null;
+		Var<Integer> x_5 = null;
+		Var<Integer> i_3 = null;
+		Var<Integer> x_6 = null;
+		Var<Integer> i_4 = null;
+		Var<Integer> i_5 = null;
+		Var<Integer> x_7 = null;
+		Var<Integer> i_6 = null;
 		
 		/* PROGRAM STARTS */
-		count_0 = new Var<Integer>(0);
-		Output.record("Test12", "main", 7, "count_0", count_0.value);
-		int a[] = {1,2,3};
-		i_0=new Var<Integer>(0);
-		Output.record("Test12", "main", 9, "i_0", i_0.value);
-		while(Phi.Entry(i_0,i_1).value<2) {
-			other_0 = new Var<Integer>(0);
-			Output.record("Test12", "main", 9, "other_0", other_0.value);
-			j_0=new Var<Integer>(Phi.Entry(i_0,i_1).value);
-			Output.record("Test12", "main", 10, "j_0", j_0.value);
-			while(Phi.Entry(j_0,j_1).value<10) {
-				count_1 = new Var<Integer>(Phi.Entry(count_0,count_2).value + 1);
-				Output.record("Test12", "main", 12, "count_1", count_1.value);
-				other_1 = new Var<Integer>(Phi.Entry(other_0,other_1).value + 1);
-				Output.record("Test12", "main", 13, "other_1", other_1.value);
-				count_2 = new Var<Integer>(count_1.value + other_1.value);
-				Output.record("Test12", "main", 14, "count_2", count_2.value);
-				System.out.println(Phi.Entry(i_0,i_1).value);
-				a[Phi.Entry(i_0,i_1).value] = 2;
-				j_1 = new Var<Integer>(Phi.Entry(j_0,j_1).value + 1);
-				Output.record("Test12", "main", 16, "j_1", j_1.value);
-			}
-			other_2 = Phi.Exit(other_0,other_1);
-			other_1 = null;
-			Output.record("Test12", "main", 11, "other_2", other_2.value);
-			count_3 = Phi.Exit(count_0,count_2);
-			Output.record("Test12", "main", 11, "count_3", count_3.value);
-			j_2 = Phi.Exit(j_0,j_1);
-			j_1 = null;
-			Output.record("Test12", "main", 11, "j_2", j_2.value);
-			i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
-			Output.record("Test12", "main", 17, "i_1", i_1.value);
-		}
-		count_4 = Phi.Exit(count_0,count_3);
-		Output.record("Test12", "main", 10, "count_4", count_4.value);
-		i_2 = Phi.Exit(i_0,i_1);
-		Output.record("Test12", "main", 10, "i_2", i_2.value);
-		System.out.println(count_4.value);
+		x_0 = new Var<Integer>((0));
+		Output.record("Test12", "main", 6, "x_0", x_0.value);
 		
+		i_0=new Var<Integer>((0));
+		Output.record("Test12", "main", 8, "i_0", i_0.value);
+		while(Phi.Entry(i_0,i_5).value<10) {
+			i_1 = new Var<Integer>((Phi.Entry(i_0,i_5).value));
+			Output.record("Test12", "main", 8, "i_1", i_1.value);
+if(i_1.value == 1) {
+				x_1 = new Var<Integer>((Phi.Entry(x_0,x_6).value + 1));
+				Output.record("Test12", "main", 10, "x_1", x_1.value);
+			}
+			else {
+				while(Phi.Entry(x_0,x_4).value > -5) {
+					i_2 = new Var<Integer>((Phi.Entry(i_1,i_2).value));
+					Output.record("Test12", "main", 13, "i_2", i_2.value);
+if(i_2.value % 2 == 0) {
+						x_2 = new Var<Integer>((Phi.Entry(x_0,x_4).value - 1));
+						Output.record("Test12", "main", 15, "x_2", x_2.value);
+					}
+					else {
+						x_3 = new Var<Integer>((x_0.value - 2));
+						Output.record("Test12", "main", 18, "x_3", x_3.value);
+					}
+					x_4 = Phi.If((i_2.value % 2 == 0),x_2,x_3);
+					Output.record("Test12", "main", 17, "x_4", x_4.value);
+				}
+				x_5 = Phi.Exit(x_1,x_4);
+				Output.record("Test12", "main", 13, "x_5", x_5.value);
+				i_3 = Phi.Exit(i_1,i_2);
+				Output.record("Test12", "main", 13, "i_3", i_3.value);
+			}
+			x_6 = Phi.If((i_1.value == 1),x_1,x_5);
+			Output.record("Test12", "main", 12, "x_6", x_6.value);
+			i_4 = Phi.If((i_1.value == 1),i_1,i_3);
+			Output.record("Test12", "main", 12, "i_4", i_4.value);
+			i_5 = new Var<Integer>((i_4.value + 1));
+			Output.record("Test12", "main", 21, "i_5", i_5.value);
+		}
+		x_7 = Phi.Exit(x_0,x_6);
+		Output.record("Test12", "main", 9, "x_7", x_7.value);
+		i_6 = Phi.Exit(i_0,i_5);
+		Output.record("Test12", "main", 9, "i_6", i_6.value);
+		System.out.print(x_7.value);
 	}
 	
 }

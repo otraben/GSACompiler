@@ -104,7 +104,21 @@ public class FaultLocalization {
 				else if(line.equals("*** OUTPUT ***")) {
 					// check if this is equal to the correct output
 					line = reader.readLine();
-					if(Double.parseDouble(line) == correctOutput) {
+					if(line.equals("NA")) {
+						try (PrintStream out = new PrintStream(new FileOutputStream(outYFilePath, true))){
+							if(executionCount == 1) {
+								out.print("1 ");
+							}
+							else {
+								out.print(" 1 ");
+							}
+							out.close();
+				            
+				        } catch (Exception e){
+				            e.printStackTrace();
+				        }
+					}
+					else if(Double.parseDouble(line) == correctOutput) {
 						// Y = 0
 						try (PrintStream out = new PrintStream(new FileOutputStream(outYFilePath, true))){
 							if(executionCount == 1) {
@@ -162,7 +176,7 @@ public class FaultLocalization {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		// create the new output file
 		try (PrintStream out = new PrintStream(new FileOutputStream(newoutputFilePath))){
 			// create the row for each variable
@@ -178,7 +192,6 @@ public class FaultLocalization {
             	}
             	
             	out.print(String.format("%30s", v));
-            	System.out.println(v + " " + outputs.get(v).size());
             	
             	// add every value
             	int count = 1;
@@ -186,14 +199,22 @@ public class FaultLocalization {
             		// skip the first 2
             		if(count > 2) {
             			if(o != null) {
-	            			out.print(String.format("%15g", o));
+            				if(o == Double.POSITIVE_INFINITY) {
+            					out.print(String.format("%15g", 1000000000.0));
+            				}
+            				else if(o == Double.NEGATIVE_INFINITY) {
+            					out.print(String.format("%15g", -1000000000.0));
+            				}
+            				else {
+            					out.print(String.format("%15g", o));
+            				}
 	            		} 
             			else if(allNull) {
-            				out.print(String.format("%15s", 0));
+            				out.print(String.format("%15s", 0.00000));
             			}
             			else {
 	            			out.print(String.format("%15s", "NA"));
-	            		}   
+            			}
             		}
             		count++;      		
             	}

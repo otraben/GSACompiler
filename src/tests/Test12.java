@@ -3,21 +3,24 @@ package tests;
 public class Test12 {
 	
 	public static void main(String[] args) {
+		int x = 0;
 		
-		int count = 0;
-		int[] a = {1,2,3};
-		for(int i=0; i<2; i++) {
-			int other = 0;
-			for(int j=i; j<10; j++) {
-				count++;
-				other++;
-				count += other;
-				System.out.println(i);
-				a[i] = 2;
+		for(int i=0; i<10; i++) {
+			if(i == 1) {
+				x += 1;
+			}
+			else {
+				while(x > -5) {
+					if(i % 2 == 0) {
+						x--;
+					}
+					else {
+						x -= 2;
+					}
+				}
 			}
 		}
-		System.out.println(count);
-		
+		System.out.print(x);
 	}
 	
 }

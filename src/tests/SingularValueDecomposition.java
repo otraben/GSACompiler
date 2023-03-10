@@ -543,6 +543,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
             r++;
          }
       }
+      System.out.println(r);
       return r;
    }
   private static final long serialVersionUID = 1;

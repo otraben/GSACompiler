@@ -53,6 +53,11 @@ public class PreProcessor extends JavaBaseListener {
 	Token ifStatementToken;
 	String primaryName = "";
 	
+	// these vars are used for the specific case where a loop has phi.entry vars used within it
+	int loopConditionDepth = 0;
+	boolean loopFound = false;
+	Token loopToken;
+	
 	
 	public PreProcessor(CommonTokenStream tokens) {
         rewriter = new TokenStreamRewriter(tokens);   
@@ -154,9 +159,17 @@ public class PreProcessor extends JavaBaseListener {
 	}
 	
 	@Override
+	public void exitForControl(JavaParser.ForControlContext ctx) {
+		loopFound = false;
+		loopConditionDepth = 0;
+	}
+	
+	@Override
 	public void enterStatement(JavaParser.StatementContext ctx) {
 		if(ctx.FOR()!=null || ctx.WHILE()!=null) {
+			loopFound = true;
 			loopDepth++;
+			loopToken = ctx.start;
 		}
 		else if(ctx.IF()!=null) {
 			ifStatement = true;
@@ -511,6 +524,9 @@ public class PreProcessor extends JavaBaseListener {
 		if(ifStatement) {
 			ifConditionDepth++;
 		}
+		else if(loopFound) {
+			loopConditionDepth++;
+		}
 	}
 	
 	@Override
@@ -521,12 +537,29 @@ public class PreProcessor extends JavaBaseListener {
 				ifStatement = false;
 			}
 		}
+		else if(loopFound) {
+			loopConditionDepth--;
+			if(loopConditionDepth==0) {
+				loopFound = false;
+			}
+		}
 	}
 	
 	@Override
 	public void exitPrimary(JavaParser.PrimaryContext ctx) {
+		// tab amount
+		String ws = "";
+		for(int i=0; i<tabAmount+1; i++) {
+			ws += '\t';
+		}
+				
 		if(ifStatement && !literal && !primaryName.equals(ctx.getText()) && !ctx.getText().equals("Math") && !ctx.getText().equals("this") && !ctx.getText().equals("super") && vars.contains(ctx.getText())) {
-			rewriter.insertBefore(ifStatementToken, ctx.getText() + " = " + ctx.getText() + ";\n");
+			rewriter.insertBefore(ifStatementToken, ctx.getText() + " = " + ctx.getText() + ";\n" + ws);
+			lineIncreases.add(ctx.getStart().getLine() + extraLines);
+			extraLines++;
+		}
+		else if(loopFound && !literal && !primaryName.equals(ctx.getText()) && !ctx.getText().equals("Math") && !ctx.getText().equals("this") && !ctx.getText().equals("super") && vars.contains(ctx.getText())) {
+			rewriter.insertBefore(loopToken, ctx.getText() + " = " + ctx.getText() + ";\n" + ws);
 			lineIncreases.add(ctx.getStart().getLine() + extraLines);
 			extraLines++;
 		}

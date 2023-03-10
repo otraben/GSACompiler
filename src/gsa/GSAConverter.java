@@ -78,7 +78,7 @@ public class GSAConverter extends JavaBaseListener {
 	int ifDepth = 0;
 	
 	// while statement variables
-	Stack<List<String>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally
+	Stack<Stack<List<String>>> firstVarFound;								// each while loop will have a list of vars that have been defined with the entry func. all vars after that can behave normally (each loop has a stack for each block within that loop)
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryVars;	// keeps track of the phi entry function placement locations
 	Stack<HashMap<JavaParser.PrimaryContext,Integer>> phiEntryCausalNums;
 	Stack<HashMap<String,Integer>> whileIfVars;
@@ -269,8 +269,12 @@ public class GSAConverter extends JavaBaseListener {
     		
     		// add a comment
     		String comment = "\n\n\t\t// all variables are declared to null";
-    		rewriter.insertAfter(currentFirstLine, comment);
-    		
+    		rewriter.insertAfter(currentFirstLine, comment);	
+    	}
+    	
+    	// inside a loop?
+    	if(firstVarFound.size()>0) {
+    		firstVarFound.peek().push(new ArrayList<>());
     	}
     }
     
@@ -279,6 +283,11 @@ public class GSAConverter extends JavaBaseListener {
     	tabAmount -= 1;
     	
     	scope.pop();
+    	
+    	// inside a loop?
+    	if(firstVarFound.size()>0) {
+    		firstVarFound.peek().pop();
+    	}
     }
     
     @Override
@@ -399,7 +408,7 @@ public class GSAConverter extends JavaBaseListener {
     		
     		
     		// a new while statement has been found, so a stack element must be added for all while loop related stacks
-    		firstVarFound.push(new ArrayList<>());
+    		firstVarFound.push(new Stack<>());
     		phiEntryVars.push(new HashMap<JavaParser.PrimaryContext,Integer>());
     		phiEntryCausalNums.push(new HashMap<JavaParser.PrimaryContext,Integer>());
     		whileIfVars.push(new HashMap<>());
@@ -695,7 +704,7 @@ public class GSAConverter extends JavaBaseListener {
     	else if(ctx.WHILE() != null) {
     		whileOrIf = "";
     		// pop off all stack elements for this loop
-    		List<String> varsFound = firstVarFound.pop();
+    		Stack<List<String>> varsFound = firstVarFound.pop();
     		HashMap<JavaParser.PrimaryContext,Integer> tokens = phiEntryVars.pop();
     		HashMap<JavaParser.PrimaryContext,Integer> causalNums = phiEntryCausalNums.pop();
     		HashMap<String,Integer> prevVarCount = prevVarCounts.pop();
@@ -759,13 +768,8 @@ public class GSAConverter extends JavaBaseListener {
     			}
     			if(prevVarCount.containsKey(v) && !varCounts.get(v).equals(prevVarCount.get(v))) {
     				
-    				// remove variable versions if they were declared inside a different scope
-    				String remove = "";
-    				if(firstVarFound.size()>0) {
-    					if(scope.peek().containsKey(v)) {
-    						remove = "\n" + ws + v + "_" + varCounts.get(v) + " = null;";		
-    					}
-    				}
+    				// remove variable versions from inside the loop (no longer needed)
+    				String remove = "\n" + ws + v + "_" + (varCounts.get(v)) + " = null;";
     				
     				varCounts.put(v, varCounts.get(v) + 1);
     				scope.peek().put(v, varCounts.get(v));
@@ -817,7 +821,7 @@ public class GSAConverter extends JavaBaseListener {
         	
         	// if this is inside a loop, add it to the firstVarFound list, because it should not have phi entry functions
         	if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(var)) {
-        		firstVarFound.peek().add(var);
+        		firstVarFound.peek().peek().add(var);
         	}
     	}
     	else {
@@ -1025,7 +1029,7 @@ public class GSAConverter extends JavaBaseListener {
 	    		
 	    		// if inside a loop, make sure the assigned variable will no longer be used for phi entry functions, because it has been used
 	    		if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(var)) {
-	    			firstVarFound.peek().add(var);
+	    			firstVarFound.peek().peek().add(var);
 	    		}
     		}
 	
@@ -1081,49 +1085,102 @@ public class GSAConverter extends JavaBaseListener {
     @Override
     public void enterPrimary(JavaParser.PrimaryContext ctx) {
     	
+    	// INSIDE A LOOP? check the firstVarFound scope to see if this variable needs a phi entry function
+    	boolean phiEntry = false;
+    	try {
+    		Stack<List<String>> varsFound = (Stack<List<String>>) firstVarFound.peek().clone();
+        	while(!varsFound.isEmpty()) {
+        		  
+    			if(varsFound.peek().contains(ctx.getText())) {
+    				phiEntry = true;
+    				break;
+    			}
+    			varsFound.pop();
+    		}
+    	}
+    	catch(Exception e) {
+    		// sjip
+    	}
+    	
+    	
     	// variables that are just now being declared have already had their index added
     	if(varCounts.containsKey(ctx.getText()) && !globals.contains(ctx.getText()) && !arrays.contains(ctx.getText()) && !ctx.getText().equals("this") && !ctx.getText().equals("super")) {
     		if(insideWhileCondition) {
-    			// we know this condition variable will need to be replaced with a phi entry function (this will be done later)
-    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
-    			
-    			if(ifDepth > 0 && whileOrIf.equals("while")) {
-    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			while(!tempScope.isEmpty()) {
+    				if(tempScope.peek().containsKey(ctx.getText())) {
+    					break;
+    				}
+    				tempScope.pop();
     			}
+    			// we know this condition variable will need to be replaced with a phi entry function (this will be done later)
+    			phiEntryVars.peek().put(ctx, tempScope.peek().get(ctx.getText()));
     			
     		}
-    		// inside a while loop AND left/right side variables are equivalent
-    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText())) {
+    		// inside a while loop AND left/right side variables are equivalent ()
+    		else if(assignedVariableIndexed && currentAssignee.equals(ctx.getText()) && firstVarFound.size() > 0 && !phiEntry) {
+    			
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			while(!tempScope.isEmpty()) {
+    				if(tempScope.peek().containsKey(ctx.getText()) && currentAssigneeNum != tempScope.peek().get(ctx.getText())) {
+    					break;
+    				}
+    				tempScope.pop();
+    			}
+    			
     			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
-    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText())-1);
-    			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
+    			phiEntryVars.peek().put(ctx, tempScope.peek().get(ctx.getText()));
+    			phiEntryCausalNums.peek().put(ctx, tempScope.peek().get(ctx.getText()));
     			
     			// add this var to the list
-    			firstVarFound.peek().add(ctx.getText());
-    			
-    			if(ifDepth > 0 && whileOrIf.equals("while")) {
-    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
-    			}
+    			firstVarFound.peek().peek().add(ctx.getText());
+//    			
+//    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+//    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+//    			}
     		
     		}
     		// inside a while loop AND left/right side variables are NOT equivalent
-    		else if(assignedVariableIndexed && firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText())) {
-    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
-    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
-    			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
-    			
-    			if(ifDepth > 0 && whileOrIf.equals("while")) {
-    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    		else if(assignedVariableIndexed && firstVarFound.size() > 0 && !phiEntry) {
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			while(!tempScope.isEmpty()) {
+    				if(tempScope.peek().containsKey(ctx.getText()) && currentAssigneeNum != tempScope.peek().get(ctx.getText())) {
+    					break;
+    				}
+    				tempScope.pop();
     			}
+
+    			// we know this variable will be replaced with a phi entry function (which will be placed later, because it depends on the last instance of the variable in the loop)
+    			try {
+    				phiEntryVars.peek().put(ctx, tempScope.peek().get(ctx.getText()));
+        			phiEntryCausalNums.peek().put(ctx, tempScope.peek().get(ctx.getText()));
+    			}
+    			catch(Exception e) {
+    				phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
+        			phiEntryCausalNums.peek().put(ctx, varCounts.get(ctx.getText()));
+    			}
+    			
+    			
+//    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+//    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+//    			}
     		
     		}
     		// inside a while loop BUT this is NOT an assignment statement
-    		else if(firstVarFound.size() > 0 && !firstVarFound.peek().contains(ctx.getText()) && currentAssignee.equals("")) {
-    			phiEntryVars.peek().put(ctx, varCounts.get(ctx.getText()));
-
-    			if(ifDepth > 0 && whileOrIf.equals("while")) {
-    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+    		else if(firstVarFound.size() > 0 && !phiEntry && currentAssignee.equals("")) {
+    			Stack<HashMap<String,Integer>> tempScope = (Stack<HashMap<String, Integer>>) scope.clone();
+    			while(!tempScope.isEmpty()) {
+    				if(tempScope.peek().containsKey(ctx.getText()) && currentAssigneeNum != tempScope.peek().get(ctx.getText())) {
+    					break;
+    				}
+    				tempScope.pop();
     			}
+    			
+    			phiEntryVars.peek().put(ctx, tempScope.peek().get(ctx.getText()));
+
+//    			if(ifDepth > 0 && whileOrIf.equals("while")) {
+//    				whileIfVars.peek().put(ctx.getText(), beforeIfChain.peek().get(ctx.getText()));
+//    			}
     		}
     		// if this variable is equal to the variable being assigned, make sure you use the variable previously defined
     		else if(insideIfCondition) {

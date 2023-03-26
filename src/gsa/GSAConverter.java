@@ -37,7 +37,6 @@ public class GSAConverter extends JavaBaseListener {
 	public List<String> arrays;
 	
 	// class-specific variables
-	Token classFirstLine;
 	String className = "";
 	int classCounter = 0;
 	
@@ -148,11 +147,7 @@ public class GSAConverter extends JavaBaseListener {
     		rewriter.replace(ctx.Identifier().getSymbol(), className + "_Faulty");
     	}
     }
-    
-    @Override
-    public void enterClassBody(JavaParser.ClassBodyContext ctx) {
-		classFirstLine = ctx.LBRACE().getSymbol();
-    }
+   
     
     @Override
     public void enterConstructorDeclaration(JavaParser.ConstructorDeclarationContext ctx) {

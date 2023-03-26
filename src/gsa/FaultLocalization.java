@@ -13,7 +13,7 @@ import outputs.Test_Output.Test_Faulty;
 
 public class FaultLocalization {
 	
-	public int numberOfExecutions = 100;
+	public int numberOfExecutions = 1000;
 	public String outputFilePath;
 	public String outYFilePath;
 	public String causalMapFilePath;
@@ -183,18 +183,20 @@ public class FaultLocalization {
             for(String v : outputs.keySet()) {
             	
             	// check if this variable is ever used
+            	int count = 1;
             	boolean allNull = true;
             	for(Double o : outputs.get(v)) {
-            		if(o != null) {
+            		if(count > 2 && o != null) {
             			allNull = false;
             			break;
             		}
+            		count++;
             	}
             	
             	out.print(String.format("%30s", v));
             	
             	// add every value
-            	int count = 1;
+            	count = 1;
             	for(Double o : outputs.get(v)) {
             		// skip the first 2
             		if(count > 2) {

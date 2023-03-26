@@ -5,7 +5,7 @@ public class Fluky {
 	public static int flukyInt(int i, double p) {
 		double r = Math.random();
 		if(r <= p) {
-			return 2 * i + 5;
+			return (i + 1) * (int)(r * 2);
 		}
 		else {
 			return i;
@@ -15,7 +15,7 @@ public class Fluky {
 	public static double flukyDouble(double d, double p) {
 		double r = Math.random();
 		if(r <= p) {
-			return 2 * d + 5;
+			return (d + 1) * (r * 2);
 		}
 		else {
 			return d;

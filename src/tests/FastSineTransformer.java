@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.commons.math3.transform;
+package tests;
 
 import java.io.Serializable;
 
@@ -23,6 +23,12 @@ import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
+import org.apache.commons.math3.transform.DftNormalization;
+import org.apache.commons.math3.transform.DstNormalization;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.RealTransformer;
+import org.apache.commons.math3.transform.TransformType;
+import org.apache.commons.math3.transform.TransformUtils;
 import org.apache.commons.math3.util.ArithmeticUtils;
 import org.apache.commons.math3.util.FastMath;
 

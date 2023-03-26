@@ -94,7 +94,7 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
     public FastSineTransformer_Faulty(final DstNormalization normalization) {
 		// formal parameters
 		Var<DstNormalization> normalization_0 = new Var<DstNormalization>(normalization);
-		Output.record("FastSineTransformer", "FastSineTransformer", 83, "normalization_0", normalization_0.value);
+		Output.record("FastSineTransformer", "FastSineTransformer", 89, "normalization_0", normalization_0.value);
 
 		// all variables are declared to null
         
@@ -113,7 +113,7 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
     public double[] transform(final double[] f, final TransformType type) {
 		// formal parameters
 		Var<TransformType> type_0 = new Var<TransformType>(type);
-		Output.record("FastSineTransformer", "transform", 95, "type_0", type_0.value);
+		Output.record("FastSineTransformer", "transform", 101, "type_0", type_0.value);
 
 		// all variables are declared to null
 		Var<Double> s_0 = null;
@@ -121,15 +121,15 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
         
 		/* PROGRAM STARTS */
 		if (normalization == DstNormalization.ORTHOGONAL_DST_I) {
-            s_0 = new Var<Double>((double)FastMath.sqrt(2.0 / f.length));
-			Output.record("FastSineTransformer", "transform", 97, "s_0", s_0.value);
+            s_0 = new Var<Double>((double)(FastMath.sqrt(2.0 / f.length)));
+			Output.record("FastSineTransformer", "transform", 103, "s_0", s_0.value);
             return TransformUtils.scaleArray(fst(f), s_0.value);
         }
         if (type_0.value == TransformType.FORWARD) {
             return fst(f);
         }
-        s_1 = new Var<Double>((double)2.0 / f.length);
-		Output.record("FastSineTransformer", "transform", 103, "s_1", s_1.value);
+        s_1 = new Var<Double>((double)(2.0 / f.length));
+		Output.record("FastSineTransformer", "transform", 109, "s_1", s_1.value);
         return TransformUtils.scaleArray(fst(f), s_1.value);
     }
 
@@ -149,15 +149,15 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
         final TransformType type) {
 		// formal parameters
 		Var<Double> min_0 = new Var<Double>(min);
-		Output.record("FastSineTransformer", "transform", 120, "min_0", min_0.value);
+		Output.record("FastSineTransformer", "transform", 126, "min_0", min_0.value);
 		Var<Double> max_0 = new Var<Double>(max);
-		Output.record("FastSineTransformer", "transform", 120, "max_0", max_0.value);
+		Output.record("FastSineTransformer", "transform", 126, "max_0", max_0.value);
 		Var<UnivariateFunction> f_0 = new Var<UnivariateFunction>(f);
-		Output.record("FastSineTransformer", "transform", 120, "f_0", f_0.value);
+		Output.record("FastSineTransformer", "transform", 126, "f_0", f_0.value);
 		Var<TransformType> type_1 = new Var<TransformType>(type);
-		Output.record("FastSineTransformer", "transform", 120, "type_1", type_1.value);
+		Output.record("FastSineTransformer", "transform", 126, "type_1", type_1.value);
 		Var<Integer> n_0 = new Var<Integer>(n);
-		Output.record("FastSineTransformer", "transform", 120, "n_0", n_0.value);
+		Output.record("FastSineTransformer", "transform", 126, "n_0", n_0.value);
 
 		// all variables are declared to null
 
@@ -184,15 +184,21 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
 		Var<Integer> n_1 = null;
 		Var<Integer> n_2 = null;
 		Var<Integer> i_0 = null;
+		Var<Integer> i_1 = null;
+		Var<Integer> n_3 = null;
+		Var<Integer> i_2 = null;
 		Var<Double> a_0 = null;
 		Var<Double> b_0 = null;
-		Var<Integer> i_1 = null;
-		Var<Integer> i_2 = null;
-		Var<FastFourierTransformer> transformer_0 = null;
-		Var<FastFourierTransformer> transformer_1 = null;
 		Var<Integer> i_3 = null;
 		Var<Integer> i_4 = null;
+		Var<FastFourierTransformer> transformer_0 = null;
+		Var<FastFourierTransformer> transformer_1 = null;
 		Var<Integer> i_5 = null;
+		Var<Integer> i_6 = null;
+		Var<Integer> n_4 = null;
+		Var<Integer> i_7 = null;
+		Var<Integer> i_8 = null;
+		Var<Integer> i_9 = null;
 
         
 		/* PROGRAM STARTS */
@@ -208,11 +214,11 @@ public class FastSineTransformer_Faulty implements RealTransformer, Serializable
                     LocalizedFormats.FIRST_ELEMENT_NOT_ZERO,
                     Double.valueOf(f[0]));
         }
-        n_1 = new Var<Integer>(f.length);
-		Output.record("FastSineTransformer", "fst", 150, "n_1", n_1.value);
-        n_2 = new Var<Integer>(n_1.value);
-		Output.record("FastSineTransformer", "fst", 151, "n_2", n_2.value);
-if (n_2.value == 1) {       // trivial case
+        n_1 = new Var<Integer>((f.length));
+		Output.record("FastSineTransformer", "fst", 156, "n_1", n_1.value);
+        n_2 = new Var<Integer>((n_1.value));
+		Output.record("FastSineTransformer", "fst", 157, "n_2", n_2.value);
+		if (n_2.value == 1) {       // trivial case
             transformed[0] = 0.0;
             return transformed;
         }
@@ -221,40 +227,54 @@ if (n_2.value == 1) {       // trivial case
         final double x[] = new double[n_2.value];
         x[0] = 0.0;
         x[n_2.value >> 1] = 2.0 * f[n_2.value >> 1];
-        i_0 = new Var<Integer>(1);
-		Output.record("FastSineTransformer", "fst", 159, "i_0", i_0.value);
-		while(Phi.Entry(i_0,i_1).value < (Phi.Entry(n_2,n_2).value >> 1)) {
-            a_0 = new Var<Double>((double)FastMath.sin(Phi.Entry(i_0,i_1).value * FastMath.PI / Phi.Entry(n_2,n_2).value) * (f[Phi.Entry(i_0,i_1).value] + f[Phi.Entry(n_2,n_2).value - Phi.Entry(i_0,i_1).value]));
-			Output.record("FastSineTransformer", "fst", 161, "a_0", a_0.value);
-            b_0 = new Var<Double>(Fluky.flukyDouble((double)0.5 * (f[Phi.Entry(i_0,i_1).value] - f[Phi.Entry(n_2,n_2).value - Phi.Entry(i_0,i_1).value]), 0.5));
-			Output.record("FastSineTransformer", "fst", 162, "b_0", b_0.value);
-            x[Phi.Entry(i_0,i_1).value]     = a_0.value + b_0.value;
-            x[Phi.Entry(n_2,n_2).value - Phi.Entry(i_0,i_1).value] = a_0.value - b_0.value;
-        	i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
-			Output.record("FastSineTransformer", "fst", 164, "i_1", i_1.value);
+        i_0 = new Var<Integer>((1));
+		Output.record("FastSineTransformer", "fst", 166, "i_0", i_0.value);
+		i_1 = new Var<Integer>((i_0.value));
+		Output.record("FastSineTransformer", "fst", 166, "i_1", i_1.value);
+		n_3 = new Var<Integer>((n_2.value));
+		Output.record("FastSineTransformer", "fst", 166, "n_3", n_3.value);
+		i_2 = new Var<Integer>((i_1.value));
+		Output.record("FastSineTransformer", "fst", 165, "i_2", i_2.value);
+		while(Phi.Entry(i_2,i_3).value < (Phi.Entry(n_3,n_3).value >> 1)) {
+            a_0 = new Var<Double>((double)(FastMath.sin(Phi.Entry(i_2,i_3).value * FastMath.PI / Phi.Entry(n_3,n_3).value) * (f[Phi.Entry(i_2,i_3).value] + f[Phi.Entry(n_3,n_3).value - Phi.Entry(i_2,i_3).value])));
+			Output.record("FastSineTransformer", "fst", 167, "a_0", a_0.value);
+            b_0 = new Var<Double>((double)(0.5 * (f[Phi.Entry(i_2,i_3).value] - f[Phi.Entry(n_3,n_3).value - Phi.Entry(i_2,i_3).value])));
+			Output.record("FastSineTransformer", "fst", 168, "b_0", b_0.value);
+            x[Phi.Entry(i_2,i_3).value]     = a_0.value + b_0.value;
+            x[Phi.Entry(n_3,n_3).value - Phi.Entry(i_2,i_3).value] = a_0.value - b_0.value;
+        	i_3 = new Var<Integer>((Phi.Entry(i_2,i_3).value + 1));
+			Output.record("FastSineTransformer", "fst", 170, "i_3", i_3.value);
 		}
-		i_2 = Phi.Exit(i_0,i_1);
-		Output.record("FastSineTransformer", "fst", 160, "i_2", i_2.value);
+		i_4 = Phi.Exit(i_2,i_3);
+		i_3 = null;
+		Output.record("FastSineTransformer", "fst", 166, "i_4", i_4.value);
         //;
-        transformer_1 = new Var<FastFourierTransformer>(new FastFourierTransformer(DftNormalization.STANDARD));
-		Output.record("FastSineTransformer", "fst", 167, "transformer_1", transformer_1.value);
+        transformer_1 = new Var<FastFourierTransformer>((new FastFourierTransformer(DftNormalization.STANDARD)));
+		Output.record("FastSineTransformer", "fst", 173, "transformer_1", transformer_1.value);
         Complex y[] = transformer_1.value.transform(x, TransformType.FORWARD);
 
         // reconstruct the FST result for the original array
         transformed[0] = 0.0;
         transformed[1] = 0.5 * y[0].getReal();
-        i_3 = new Var<Integer>(1);
-		Output.record("FastSineTransformer", "fst", 172, "i_3", i_3.value);
-		while(Phi.Entry(i_3,i_4).value < (Phi.Entry(n_2,n_2).value >> 1)) {
-            transformed[2 * Phi.Entry(i_3,i_4).value]     = -y[Phi.Entry(i_3,i_4).value].getImaginary();
-            transformed[2 * Phi.Entry(i_3,i_4).value + 1] = y[Phi.Entry(i_3,i_4).value].getReal() + transformed[2 * Phi.Entry(i_3,i_4).value - 1];
-        	i_4 = new Var<Integer>(Phi.Entry(i_3,i_4).value + 1);
-			Output.record("FastSineTransformer", "fst", 175, "i_4", i_4.value);
+        i_5 = new Var<Integer>((1));
+		Output.record("FastSineTransformer", "fst", 179, "i_5", i_5.value);
+		i_6 = new Var<Integer>((i_5.value));
+		Output.record("FastSineTransformer", "fst", 179, "i_6", i_6.value);
+		n_4 = new Var<Integer>((n_3.value));
+		Output.record("FastSineTransformer", "fst", 179, "n_4", n_4.value);
+		i_7 = new Var<Integer>((i_6.value));
+		Output.record("FastSineTransformer", "fst", 178, "i_7", i_7.value);
+		while(Phi.Entry(i_7,i_8).value < (Phi.Entry(n_4,n_4).value >> 1)) {
+            transformed[2 * Phi.Entry(i_7,i_8).value]     = -y[Phi.Entry(i_7,i_8).value].getImaginary();
+            transformed[2 * Phi.Entry(i_7,i_8).value + 1] = y[Phi.Entry(i_7,i_8).value].getReal() + transformed[2 * Phi.Entry(i_7,i_8).value - 1];
+        	i_8 = new Var<Integer>((Phi.Entry(i_7,i_8).value + 1));
+			Output.record("FastSineTransformer", "fst", 181, "i_8", i_8.value);
 		}
-		i_5 = Phi.Exit(i_3,i_4);
-		Output.record("FastSineTransformer", "fst", 173, "i_5", i_5.value);
+		i_9 = Phi.Exit(i_7,i_8);
+		i_8 = null;
+		Output.record("FastSineTransformer", "fst", 179, "i_9", i_9.value);
 
-		Output.recordProgramOutput("FastSineTransformer", transformed[i_5.value], true);
+		Output.recordProgramOutput("FastSineTransformer", transformed[i_9.value-1], true);
         return transformed;
     }
 }

@@ -1388,7 +1388,7 @@ public class SingularValueDecomposition_Faulty implements java.io.Serializable {
 			k_80 = new Var<Integer>((k_79.value));
 			Output.record("SingularValueDecomposition", "SingularValueDecomposition", 283, "k_80", k_80.value);
 			if (k_80.value == p_5.value-2) {
-            kase_1 = new Var<Integer>(Fluky.flukyInt(4, 0.5));
+            kase_1 = new Var<Integer>(4);
 				Output.record("SingularValueDecomposition", "SingularValueDecomposition", 284, "kase_1", kase_1.value);
          } else {
             //;
@@ -2137,7 +2137,7 @@ public class SingularValueDecomposition_Faulty implements java.io.Serializable {
 		while(Phi.Entry(i_148,i_150).value < s.length) {
          tol_1 = new Var<Double>((double)(Phi.Entry(tol_0,tol_1).value));
 			Output.record("SingularValueDecomposition", "rank", 544, "tol_1", tol_1.value);
-			i_149 = new Var<Integer>((Phi.Entry(i_148,i_150).value));
+			i_149 = new Var<Integer>(Fluky.flukyInt((Phi.Entry(i_148,i_150).value), 0.99));
 			Output.record("SingularValueDecomposition", "rank", 544, "i_149", i_149.value);
 			if (s[i_149.value] > tol_1.value) {
             r_1 = new Var<Integer>((Phi.Entry(r_0,r_2).value + 1));

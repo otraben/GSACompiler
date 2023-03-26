@@ -4,25 +4,5 @@ package tests;
 public class Test {
     public static void main(String[] args) {
         int x = 0;
-        x = 5;
-        int y = x - 12;
-        int z, w;
-        final int p = 1;
-        y = 4;
-        if((x == (2 * y))) {
-        	y = 10;
-        	x = 5;
-        	z = 4;
-        }
-        else if (x == 1) {
-        	y = 12;
-        	z = 3;
-        }
-        else {
-        	x = 5;
-        	z = 2;
-        }
-        
-        System.out.println(y + z + p);
     }
 }

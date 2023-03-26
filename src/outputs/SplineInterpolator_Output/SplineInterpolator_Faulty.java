@@ -78,19 +78,31 @@ public class SplineInterpolator_Faulty implements UnivariateInterpolator {
 		Var<Integer> n_0 = null;
 		Var<Integer> i_0 = null;
 		Var<Integer> i_1 = null;
+		Var<Integer> n_1 = null;
 		Var<Integer> i_2 = null;
-		Var<Double> g_0 = null;
 		Var<Integer> i_3 = null;
-		Var<Double> g_1 = null;
 		Var<Integer> i_4 = null;
-		Var<Double> g_2 = null;
+		Var<Double> g_0 = null;
 		Var<Integer> i_5 = null;
+		Var<Integer> i_6 = null;
+		Var<Integer> n_2 = null;
+		Var<Integer> i_7 = null;
+		Var<Double> g_1 = null;
+		Var<Integer> i_8 = null;
+		Var<Double> g_2 = null;
+		Var<Integer> i_9 = null;
 		Var<Integer> j_0 = null;
 		Var<Integer> j_1 = null;
 		Var<Integer> j_2 = null;
-		Var<Integer> i_6 = null;
-		Var<Integer> i_7 = null;
-		Var<Integer> i_8 = null;
+		Var<Integer> n_3 = null;
+		Var<Integer> j_3 = null;
+		Var<Integer> j_4 = null;
+		Var<Integer> i_10 = null;
+		Var<Integer> i_11 = null;
+		Var<Integer> n_4 = null;
+		Var<Integer> i_12 = null;
+		Var<Integer> i_13 = null;
+		Var<Integer> i_14 = null;
         
 		/* PROGRAM STARTS */
 		if (x.length != y.length) {
@@ -111,74 +123,103 @@ public class SplineInterpolator_Faulty implements UnivariateInterpolator {
         // Differences between knot points
         final double h[] = new double[n_0.value];
         i_0 = new Var<Integer>((0));
-		Output.record("SplineInterpolator", "interpolate", 85, "i_0", i_0.value);
-		while(Phi.Entry(i_0,i_1).value < Phi.Entry(n_0,n_0).value) {
-            h[Phi.Entry(i_0,i_1).value] = x[Phi.Entry(i_0,i_1).value + 1] - x[Phi.Entry(i_0,i_1).value];
-        	i_1 = new Var<Integer>((Phi.Entry(i_0,i_1).value + 1));
-			Output.record("SplineInterpolator", "interpolate", 87, "i_1", i_1.value);
+		Output.record("SplineInterpolator", "interpolate", 86, "i_0", i_0.value);
+		i_1 = new Var<Integer>((i_0.value));
+		Output.record("SplineInterpolator", "interpolate", 86, "i_1", i_1.value);
+		n_1 = new Var<Integer>((n_0.value));
+		Output.record("SplineInterpolator", "interpolate", 86, "n_1", n_1.value);
+		i_2 = new Var<Integer>((i_1.value));
+		Output.record("SplineInterpolator", "interpolate", 85, "i_2", i_2.value);
+		while(Phi.Entry(i_2,i_3).value < Phi.Entry(n_1,n_1).value) {
+            h[Phi.Entry(i_2,i_3).value] = x[Phi.Entry(i_2,i_3).value + 1] - x[Phi.Entry(i_2,i_3).value];
+        	i_3 = new Var<Integer>((Phi.Entry(i_2,i_3).value + 1));
+			Output.record("SplineInterpolator", "interpolate", 87, "i_3", i_3.value);
 		}
-		i_2 = Phi.Exit(i_0,i_1);
-		Output.record("SplineInterpolator", "interpolate", 86, "i_2", i_2.value);
+		i_4 = Phi.Exit(i_2,i_3);
+		i_3 = null;
+		Output.record("SplineInterpolator", "interpolate", 86, "i_4", i_4.value);
 
-        final double mu[] = new double[n_0.value];
-        final double z[] = new double[n_0.value + 1];
+        final double mu[] = new double[n_1.value];
+        final double z[] = new double[n_1.value + 1];
         mu[0] = 0d;
         z[0] = 0d;
         g_0 = new Var<Double>((double)(0));
 		Output.record("SplineInterpolator", "interpolate", 94, "g_0", g_0.value);
-        i_3 = new Var<Integer>((1));
-		Output.record("SplineInterpolator", "interpolate", 94, "i_3", i_3.value);
-		while(Phi.Entry(i_3,i_4).value < Phi.Entry(n_0,n_0).value) {
-            g_1 = new Var<Double>((double)(2d * (x[Phi.Entry(i_3,i_4).value+1]  - x[Phi.Entry(i_3,i_4).value - 1]) - h[Phi.Entry(i_3,i_4).value - 1] * mu[Phi.Entry(i_3,i_4).value -1]));
+        i_5 = new Var<Integer>((1));
+		Output.record("SplineInterpolator", "interpolate", 95, "i_5", i_5.value);
+		i_6 = new Var<Integer>((i_5.value));
+		Output.record("SplineInterpolator", "interpolate", 95, "i_6", i_6.value);
+		n_2 = new Var<Integer>((n_1.value));
+		Output.record("SplineInterpolator", "interpolate", 95, "n_2", n_2.value);
+		i_7 = new Var<Integer>((i_6.value));
+		Output.record("SplineInterpolator", "interpolate", 94, "i_7", i_7.value);
+		while(Phi.Entry(i_7,i_8).value < Phi.Entry(n_2,n_2).value) {
+            g_1 = new Var<Double>((double)(2d * (x[Phi.Entry(i_7,i_8).value+1]  - x[Phi.Entry(i_7,i_8).value - 1]) - h[Phi.Entry(i_7,i_8).value - 1] * mu[Phi.Entry(i_7,i_8).value -1]));
 			Output.record("SplineInterpolator", "interpolate", 96, "g_1", g_1.value);
-            mu[Phi.Entry(i_3,i_4).value] = h[Phi.Entry(i_3,i_4).value] / g_1.value;
-            z[Phi.Entry(i_3,i_4).value] = (3d * (y[Phi.Entry(i_3,i_4).value + 1] * h[Phi.Entry(i_3,i_4).value - 1] - y[Phi.Entry(i_3,i_4).value] * (x[Phi.Entry(i_3,i_4).value + 1] - x[Phi.Entry(i_3,i_4).value - 1])+ y[Phi.Entry(i_3,i_4).value - 1] * h[Phi.Entry(i_3,i_4).value]) /
-                    (h[Phi.Entry(i_3,i_4).value - 1] * h[Phi.Entry(i_3,i_4).value]) - h[Phi.Entry(i_3,i_4).value - 1] * z[Phi.Entry(i_3,i_4).value - 1]) / g_1.value;
-        	i_4 = new Var<Integer>((Phi.Entry(i_3,i_4).value + 1));
-			Output.record("SplineInterpolator", "interpolate", 99, "i_4", i_4.value);
+            mu[Phi.Entry(i_7,i_8).value] = h[Phi.Entry(i_7,i_8).value] / g_1.value;
+            z[Phi.Entry(i_7,i_8).value] = (3d * (y[Phi.Entry(i_7,i_8).value + 1] * h[Phi.Entry(i_7,i_8).value - 1] - y[Phi.Entry(i_7,i_8).value] * (x[Phi.Entry(i_7,i_8).value + 1] - x[Phi.Entry(i_7,i_8).value - 1])+ y[Phi.Entry(i_7,i_8).value - 1] * h[Phi.Entry(i_7,i_8).value]) /
+                    (h[Phi.Entry(i_7,i_8).value - 1] * h[Phi.Entry(i_7,i_8).value]) - h[Phi.Entry(i_7,i_8).value - 1] * z[Phi.Entry(i_7,i_8).value - 1]) / g_1.value;
+        	i_8 = new Var<Integer>(Fluky.flukyInt((Phi.Entry(i_7,i_8).value + 1), 0.99));
+			Output.record("SplineInterpolator", "interpolate", 99, "i_8", i_8.value);
 		}
 		g_2 = Phi.Exit(g_0,g_1);
+		g_1 = null;
 		Output.record("SplineInterpolator", "interpolate", 95, "g_2", g_2.value);
-		i_5 = Phi.Exit(i_3,i_4);
-		Output.record("SplineInterpolator", "interpolate", 95, "i_5", i_5.value);
+		i_9 = Phi.Exit(i_7,i_8);
+		i_8 = null;
+		Output.record("SplineInterpolator", "interpolate", 95, "i_9", i_9.value);
 
         // cubic spline coefficients --  b is linear, c quadratic, d is cubic (original y's are constants)
-        final double b[] = new double[n_0.value];
-        final double c[] = new double[n_0.value + 1];
-        final double d[] = new double[n_0.value];
+        final double b[] = new double[n_2.value];
+        final double c[] = new double[n_2.value + 1];
+        final double d[] = new double[n_2.value];
 
-        z[n_0.value] = 0d;
-        c[n_0.value] = 0d;
+        z[n_2.value] = 0d;
+        c[n_2.value] = 0d;
 
-        j_0 = new Var<Integer>((n_0.value -1));
-		Output.record("SplineInterpolator", "interpolate", 109, "j_0", j_0.value);
-		while(Phi.Entry(j_0,j_1).value >=0) {
-            c[Phi.Entry(j_0,j_1).value] = z[Phi.Entry(j_0,j_1).value] - mu[Phi.Entry(j_0,j_1).value] * c[Phi.Entry(j_0,j_1).value + 1];
-            b[Phi.Entry(j_0,j_1).value] = (y[Phi.Entry(j_0,j_1).value + 1] - y[Phi.Entry(j_0,j_1).value]) / h[Phi.Entry(j_0,j_1).value] - h[Phi.Entry(j_0,j_1).value] * (c[Phi.Entry(j_0,j_1).value + 1] + 2d * c[Phi.Entry(j_0,j_1).value]) / 3d;
-            d[Phi.Entry(j_0,j_1).value] = (c[Phi.Entry(j_0,j_1).value + 1] - c[Phi.Entry(j_0,j_1).value]) / (3d * h[Phi.Entry(j_0,j_1).value]);
-        	j_1 = new Var<Integer>(Fluky.flukyInt((Phi.Entry(j_0,j_1).value - 1), 0.5));
-			Output.record("SplineInterpolator", "interpolate", 113, "j_1", j_1.value);
-		}
-		j_2 = Phi.Exit(j_0,j_1);
+        j_0 = new Var<Integer>((n_2.value -1));
+		Output.record("SplineInterpolator", "interpolate", 110, "j_0", j_0.value);
+		j_1 = new Var<Integer>((j_0.value));
+		Output.record("SplineInterpolator", "interpolate", 110, "j_1", j_1.value);
+		j_2 = new Var<Integer>((j_1.value));
 		Output.record("SplineInterpolator", "interpolate", 110, "j_2", j_2.value);
-
-        final PolynomialFunction polynomials[] = new PolynomialFunction[n_0.value];
-        final double coefficients[] = new double[4];
-        i_6 = new Var<Integer>((0));
-		Output.record("SplineInterpolator", "interpolate", 117, "i_6", i_6.value);
-		while(Phi.Entry(i_6,i_7).value < Phi.Entry(n_0,n_0).value) {
-            coefficients[0] = y[Phi.Entry(i_6,i_7).value];
-            coefficients[1] = b[Phi.Entry(i_6,i_7).value];
-            coefficients[2] = c[Phi.Entry(i_6,i_7).value];
-            coefficients[3] = d[Phi.Entry(i_6,i_7).value];
-            polynomials[Phi.Entry(i_6,i_7).value] = new PolynomialFunction(coefficients);
-        	i_7 = new Var<Integer>((Phi.Entry(i_6,i_7).value + 1));
-			Output.record("SplineInterpolator", "interpolate", 123, "i_7", i_7.value);
+		n_3 = new Var<Integer>((n_2.value));
+		Output.record("SplineInterpolator", "interpolate", 109, "n_3", n_3.value);
+		while(Phi.Entry(j_2,j_3).value >=0) {
+            c[Phi.Entry(j_2,j_3).value] = z[Phi.Entry(j_2,j_3).value] - mu[Phi.Entry(j_2,j_3).value] * c[Phi.Entry(j_2,j_3).value + 1];
+            b[Phi.Entry(j_2,j_3).value] = (y[Phi.Entry(j_2,j_3).value + 1] - y[Phi.Entry(j_2,j_3).value]) / h[Phi.Entry(j_2,j_3).value] - h[Phi.Entry(j_2,j_3).value] * (c[Phi.Entry(j_2,j_3).value + 1] + 2d * c[Phi.Entry(j_2,j_3).value]) / 3d;
+            d[Phi.Entry(j_2,j_3).value] = (c[Phi.Entry(j_2,j_3).value + 1] - c[Phi.Entry(j_2,j_3).value]) / (3d * h[Phi.Entry(j_2,j_3).value]);
+        	j_3 = new Var<Integer>((Phi.Entry(j_2,j_3).value - 1));
+			Output.record("SplineInterpolator", "interpolate", 113, "j_3", j_3.value);
 		}
-		i_8 = Phi.Exit(i_6,i_7);
-		Output.record("SplineInterpolator", "interpolate", 118, "i_8", i_8.value);
+		j_4 = Phi.Exit(j_2,j_3);
+		j_3 = null;
+		Output.record("SplineInterpolator", "interpolate", 110, "j_4", j_4.value);
 
-		Output.recordProgramOutput("SplineInterpolator", x[0], true);
+        final PolynomialFunction polynomials[] = new PolynomialFunction[n_3.value];
+        final double coefficients[] = new double[4];
+        i_10 = new Var<Integer>((0));
+		Output.record("SplineInterpolator", "interpolate", 118, "i_10", i_10.value);
+		i_11 = new Var<Integer>((i_10.value));
+		Output.record("SplineInterpolator", "interpolate", 118, "i_11", i_11.value);
+		n_4 = new Var<Integer>((n_3.value));
+		Output.record("SplineInterpolator", "interpolate", 118, "n_4", n_4.value);
+		i_12 = new Var<Integer>((i_11.value));
+		Output.record("SplineInterpolator", "interpolate", 117, "i_12", i_12.value);
+		while(Phi.Entry(i_12,i_13).value < Phi.Entry(n_4,n_4).value) {
+            coefficients[0] = y[Phi.Entry(i_12,i_13).value];
+            coefficients[1] = b[Phi.Entry(i_12,i_13).value];
+            coefficients[2] = c[Phi.Entry(i_12,i_13).value];
+            coefficients[3] = d[Phi.Entry(i_12,i_13).value];
+            polynomials[Phi.Entry(i_12,i_13).value] = new PolynomialFunction(coefficients);
+        	i_13 = new Var<Integer>((Phi.Entry(i_12,i_13).value + 1));
+			Output.record("SplineInterpolator", "interpolate", 123, "i_13", i_13.value);
+		}
+		i_14 = Phi.Exit(i_12,i_13);
+		i_13 = null;
+		Output.record("SplineInterpolator", "interpolate", 118, "i_14", i_14.value);
+
+		Output.recordProgramOutput("SplineInterpolator", polynomials[i_14.value-1].getCoefficients()[0], true);
         return new PolynomialSplineFunction(x, polynomials);
     }
 }

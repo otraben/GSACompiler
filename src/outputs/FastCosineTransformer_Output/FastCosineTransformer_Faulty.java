@@ -122,20 +122,20 @@ public class FastCosineTransformer_Faulty implements RealTransformer, Serializab
 		/* PROGRAM STARTS */
 		if (type_0.value == TransformType.FORWARD) {
             if (normalization == DctNormalization.ORTHOGONAL_DCT_I) {
-                s_0 = new Var<Double>((double)FastMath.sqrt(2.0 / (f.length - 1)));
+                s_0 = new Var<Double>((double)(FastMath.sqrt(2.0 / (f.length - 1))));
 				Output.record("FastCosineTransformer", "transform", 100, "s_0", s_0.value);
                 return TransformUtils.scaleArray(fct(f), s_0.value);
             }
             return fct(f);
         }
-        s2_0 = new Var<Double>((double)2.0 / (f.length - 1));
+        s2_0 = new Var<Double>((double)(2.0 / (f.length - 1)));
 		Output.record("FastCosineTransformer", "transform", 105, "s2_0", s2_0.value);
         //;
         if (normalization == DctNormalization.ORTHOGONAL_DCT_I) {
-            s1_1 = new Var<Double>((double)FastMath.sqrt(s2_0.value));
+            s1_1 = new Var<Double>((double)(FastMath.sqrt(s2_0.value)));
 			Output.record("FastCosineTransformer", "transform", 108, "s1_1", s1_1.value);
         } else {
-            s1_2 = new Var<Double>((double)s2_0.value);
+            s1_2 = new Var<Double>((double)(s2_0.value));
 			Output.record("FastCosineTransformer", "transform", 110, "s1_2", s1_2.value);
         }
 		s1_3 = Phi.If((normalization == DctNormalization.ORTHOGONAL_DCT_I),s1_1,s1_2);
@@ -194,35 +194,41 @@ public class FastCosineTransformer_Faulty implements RealTransformer, Serializab
 		Var<Integer> n_3 = null;
 		Var<Double> t1_0 = null;
 		Var<Integer> i_0 = null;
+		Var<Integer> i_1 = null;
+		Var<Integer> n_4 = null;
+		Var<Integer> i_2 = null;
 		Var<Double> a_0 = null;
 		Var<Double> b_0 = null;
 		Var<Double> c_0 = null;
 		Var<Double> t1_1 = null;
-		Var<Integer> i_1 = null;
-		Var<Integer> i_2 = null;
+		Var<Integer> i_3 = null;
+		Var<Integer> i_4 = null;
 		Var<Double> t1_2 = null;
 		Var<FastFourierTransformer> transformer_0 = null;
 		Var<FastFourierTransformer> transformer_1 = null;
-		Var<Integer> i_3 = null;
-		Var<Integer> i_4 = null;
 		Var<Integer> i_5 = null;
+		Var<Integer> i_6 = null;
+		Var<Integer> n_5 = null;
+		Var<Integer> i_7 = null;
+		Var<Integer> i_8 = null;
+		Var<Integer> i_9 = null;
 
         
 		/* PROGRAM STARTS */
 		final double transformed[] = new double[f.length];
 
-        n_1 = new Var<Integer>(f.length - 1);
+        n_1 = new Var<Integer>(Fluky.flukyInt((f.length - 1), 0.99));
 		Output.record("FastCosineTransformer", "fct", 146, "n_1", n_1.value);
-        n_2 = new Var<Integer>(n_1.value);
+        n_2 = new Var<Integer>((n_1.value));
 		Output.record("FastCosineTransformer", "fct", 147, "n_2", n_2.value);
-if (!ArithmeticUtils.isPowerOfTwo(n_2.value)) {
+		if (!ArithmeticUtils.isPowerOfTwo(n_2.value)) {
             throw new MathIllegalArgumentException(
                 LocalizedFormats.NOT_POWER_OF_TWO_PLUS_ONE,
                 Integer.valueOf(f.length));
         }
-        n_3 = new Var<Integer>(n_2.value);
+        n_3 = new Var<Integer>((n_2.value));
 		Output.record("FastCosineTransformer", "fct", 152, "n_3", n_3.value);
-if (n_3.value == 1) {       // trivial case
+		if (n_3.value == 1) {       // trivial case
             transformed[0] = 0.5 * (f[0] + f[1]);
             transformed[1] = 0.5 * (f[0] - f[1]);
             return transformed;
@@ -233,49 +239,64 @@ if (n_3.value == 1) {       // trivial case
         x[0] = 0.5 * (f[0] + f[n_3.value]);
         x[n_3.value >> 1] = f[n_3.value >> 1];
         // temporary variable for transformed[1]
-        t1_0 = new Var<Double>((double)0.5 * (f[0] - f[n_3.value]));
+        t1_0 = new Var<Double>((double)(0.5 * (f[0] - f[n_3.value])));
 		Output.record("FastCosineTransformer", "fct", 163, "t1_0", t1_0.value);
-        i_0 = new Var<Integer>(1);
-		Output.record("FastCosineTransformer", "fct", 163, "i_0", i_0.value);
-		while(Phi.Entry(i_0,i_1).value < (Phi.Entry(n_3,n_3).value >> 1)) {
-            a_0 = new Var<Double>(Fluky.flukyDouble((double)0.5 * (f[Phi.Entry(i_0,i_1).value] + f[Phi.Entry(n_3,n_3).value - Phi.Entry(i_0,i_1).value]), 0.5));
+        i_0 = new Var<Integer>((1));
+		Output.record("FastCosineTransformer", "fct", 164, "i_0", i_0.value);
+		i_1 = new Var<Integer>((i_0.value));
+		Output.record("FastCosineTransformer", "fct", 164, "i_1", i_1.value);
+		n_4 = new Var<Integer>((n_3.value));
+		Output.record("FastCosineTransformer", "fct", 164, "n_4", n_4.value);
+		i_2 = new Var<Integer>((i_1.value));
+		Output.record("FastCosineTransformer", "fct", 163, "i_2", i_2.value);
+		while(Phi.Entry(i_2,i_3).value < (Phi.Entry(n_4,n_4).value >> 1)) {
+            a_0 = new Var<Double>((double)(0.5 * (f[Phi.Entry(i_2,i_3).value] + f[Phi.Entry(n_4,n_4).value - Phi.Entry(i_2,i_3).value])));
 			Output.record("FastCosineTransformer", "fct", 165, "a_0", a_0.value);
-            b_0 = new Var<Double>((double)FastMath.sin(Phi.Entry(i_0,i_1).value * FastMath.PI / Phi.Entry(n_3,n_3).value) * (f[Phi.Entry(i_0,i_1).value] - f[Phi.Entry(n_3,n_3).value - Phi.Entry(i_0,i_1).value]));
+            b_0 = new Var<Double>((double)(FastMath.sin(Phi.Entry(i_2,i_3).value * FastMath.PI / Phi.Entry(n_4,n_4).value) * (f[Phi.Entry(i_2,i_3).value] - f[Phi.Entry(n_4,n_4).value - Phi.Entry(i_2,i_3).value])));
 			Output.record("FastCosineTransformer", "fct", 166, "b_0", b_0.value);
-            c_0 = new Var<Double>((double)FastMath.cos(Phi.Entry(i_0,i_1).value * FastMath.PI / Phi.Entry(n_3,n_3).value) * (f[Phi.Entry(i_0,i_1).value] - f[Phi.Entry(n_3,n_3).value - Phi.Entry(i_0,i_1).value]));
+            c_0 = new Var<Double>((double)(FastMath.cos(Phi.Entry(i_2,i_3).value * FastMath.PI / Phi.Entry(n_4,n_4).value) * (f[Phi.Entry(i_2,i_3).value] - f[Phi.Entry(n_4,n_4).value - Phi.Entry(i_2,i_3).value])));
 			Output.record("FastCosineTransformer", "fct", 167, "c_0", c_0.value);
-            x[Phi.Entry(i_0,i_1).value] = a_0.value - b_0.value;
-            x[Phi.Entry(n_3,n_3).value - Phi.Entry(i_0,i_1).value] = a_0.value + b_0.value;
-            t1_1 = new Var<Double>((double)Phi.Entry(t1_0,t1_1).value + c_0.value);
+            x[Phi.Entry(i_2,i_3).value] = a_0.value - b_0.value;
+            x[Phi.Entry(n_4,n_4).value - Phi.Entry(i_2,i_3).value] = a_0.value + b_0.value;
+            t1_1 = new Var<Double>((double)(Phi.Entry(t1_0,t1_1).value + c_0.value));
 			Output.record("FastCosineTransformer", "fct", 170, "t1_1", t1_1.value);
-        	i_1 = new Var<Integer>(Phi.Entry(i_0,i_1).value + 1);
-			Output.record("FastCosineTransformer", "fct", 170, "i_1", i_1.value);
+        	i_3 = new Var<Integer>((Phi.Entry(i_2,i_3).value + 1));
+			Output.record("FastCosineTransformer", "fct", 170, "i_3", i_3.value);
 		}
-		i_2 = Phi.Exit(i_0,i_1);
-		Output.record("FastCosineTransformer", "fct", 164, "i_2", i_2.value);
+		i_4 = Phi.Exit(i_2,i_3);
+		i_3 = null;
+		Output.record("FastCosineTransformer", "fct", 164, "i_4", i_4.value);
 		t1_2 = Phi.Exit(t1_0,t1_1);
+		t1_1 = null;
 		Output.record("FastCosineTransformer", "fct", 164, "t1_2", t1_2.value);
         //;
-        transformer_1 = new Var<FastFourierTransformer>(new FastFourierTransformer(DftNormalization.STANDARD));
+        transformer_1 = new Var<FastFourierTransformer>((new FastFourierTransformer(DftNormalization.STANDARD)));
 		Output.record("FastCosineTransformer", "fct", 173, "transformer_1", transformer_1.value);
         Complex y[] = transformer_1.value.transform(x, TransformType.FORWARD);
 
         // reconstruct the FCT result for the original array
         transformed[0] = y[0].getReal();
         transformed[1] = t1_2.value;
-        i_3 = new Var<Integer>(1);
-		Output.record("FastCosineTransformer", "fct", 178, "i_3", i_3.value);
-		while(Phi.Entry(i_3,i_4).value < (Phi.Entry(n_3,n_3).value >> 1)) {
-            transformed[2 * Phi.Entry(i_3,i_4).value]     = y[Phi.Entry(i_3,i_4).value].getReal();
-            transformed[2 * Phi.Entry(i_3,i_4).value + 1] = transformed[2 * Phi.Entry(i_3,i_4).value - 1] - y[Phi.Entry(i_3,i_4).value].getImaginary();
-        	i_4 = new Var<Integer>(Phi.Entry(i_3,i_4).value + 1);
-			Output.record("FastCosineTransformer", "fct", 181, "i_4", i_4.value);
-		}
-		i_5 = Phi.Exit(i_3,i_4);
+        i_5 = new Var<Integer>((1));
 		Output.record("FastCosineTransformer", "fct", 179, "i_5", i_5.value);
-        transformed[n_3.value] = y[n_3.value >> 1].getReal();
+		i_6 = new Var<Integer>((i_5.value));
+		Output.record("FastCosineTransformer", "fct", 179, "i_6", i_6.value);
+		n_5 = new Var<Integer>((n_4.value));
+		Output.record("FastCosineTransformer", "fct", 179, "n_5", n_5.value);
+		i_7 = new Var<Integer>((i_6.value));
+		Output.record("FastCosineTransformer", "fct", 178, "i_7", i_7.value);
+		while(Phi.Entry(i_7,i_8).value < (Phi.Entry(n_5,n_5).value >> 1)) {
+            transformed[2 * Phi.Entry(i_7,i_8).value]     = y[Phi.Entry(i_7,i_8).value].getReal();
+            transformed[2 * Phi.Entry(i_7,i_8).value + 1] = transformed[2 * Phi.Entry(i_7,i_8).value - 1] - y[Phi.Entry(i_7,i_8).value].getImaginary();
+        	i_8 = new Var<Integer>((Phi.Entry(i_7,i_8).value + 1));
+			Output.record("FastCosineTransformer", "fct", 181, "i_8", i_8.value);
+		}
+		i_9 = Phi.Exit(i_7,i_8);
+		i_8 = null;
+		Output.record("FastCosineTransformer", "fct", 179, "i_9", i_9.value);
+        transformed[n_5.value] = y[n_5.value >> 1].getReal();
 
-        Output.recordProgramOutput("FastCosineTransformer", transformed[0], true);
+        Output.recordProgramOutput("FastCosineTransformer", transformed[i_9.value-1], true);
         return transformed;
     }
 }
